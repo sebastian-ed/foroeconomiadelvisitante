@@ -109,7 +109,7 @@
     return `<section class="cms-media-control" data-media-block="${esc(path)}"><header><strong>${esc(label)}</strong><small>Imagen, MP4/WebM o YouTube · Guardado dentro del bloque</small></header>
       <div class="cms-media-preview" data-media-preview>${cmsMediaPreview(m)}</div>
       <div class="form-grid"><label class="field"><span>Tipo de medio</span><select data-media-key="${path}.type"><option value="image" ${m.type==='image'?'selected':''}>Imagen</option><option value="video" ${m.type==='video'?'selected':''}>Video MP4 / WebM</option><option value="youtube" ${m.type==='youtube'?'selected':''}>Video YouTube</option></select></label><label class="field"><span>URL o ruta del medio</span><input data-media-key="${path}.src" list="cmsMediaUrls" value="${esc(m.src)}" placeholder="Elegí de la biblioteca o pegá una URL"></label></div>
-      <div class="cms-media-actions"><select data-library-pick="${esc(path)}"><option value="">Elegir archivo de biblioteca…</option>${mediaAssets.filter(a=>/^image\/|^video\//.test(a.mime_type||'')).map(a=>`<option value="${esc(a.url)}">${esc(a.name)}</option>`).join('')}</select><button type="button" class="btn ghost" data-media-remove="${esc(path)}">Quitar medio</button></div>
+      <div class="cms-media-actions"><button type="button" class="btn primary" data-open-media-library="${esc(path)}">▧ Explorar biblioteca con miniaturas</button><button type="button" class="btn ghost" data-media-remove="${esc(path)}">Quitar medio</button></div>
       <div class="form-grid"><label class="field"><span>Imagen alternativa / póster</span><input data-media-key="${path}.poster" list="cmsMediaUrls" value="${esc(m.poster)}"></label><label class="field"><span>Encuadre</span><select data-media-key="${path}.fit"><option value="cover" ${m.fit==='cover'?'selected':''}>Cubrir / recortar</option><option value="contain" ${m.fit==='contain'?'selected':''}>Mostrar completo</option></select></label>
       <label class="field"><span>Posición horizontal</span><select data-media-key="${path}.positionX">${['left','center','right'].map(v=>`<option ${m.positionX===v?'selected':''}>${v}</option>`).join('')}</select></label><label class="field"><span>Posición vertical</span><select data-media-key="${path}.positionY">${['top','center','bottom'].map(v=>`<option ${m.positionY===v?'selected':''}>${v}</option>`).join('')}</select></label>
       <label class="field"><span>Zoom (%)</span><input type="number" min="70" max="220" data-media-key="${path}.zoom" value="${Number(m.zoom)||100}"></label><label class="field"><span>Proporción</span><select data-media-key="${path}.frameRatio">${['auto','21/9','16/9','4/3','1/1','9/16'].map(v=>`<option value="${v}" ${m.frameRatio===v?'selected':''}>${v}</option>`).join('')}</select></label></div>
@@ -122,6 +122,11 @@
     let html=`<div class="editor-card"><h3>Identidad del bloque</h3><div class="form-grid">${inputField('Nombre interno','label',s.label)}${inputField('Ancla','settings.anchor',s.settings?.anchor||s.id)}</div></div><div class="editor-card"><h3>Contenido</h3><div class="form-stack">`;
     Object.entries(s.content||{}).filter(([k,v])=>!['heroImage'].includes(k)&&['string','number'].includes(typeof v)).forEach(([k,v])=>html+=inputField(prettyLabel(k),`content.${k}`,v,{textarea:['body','note','emptyBody'].includes(k)}));
     html+=`</div></div><div class="editor-card"><h3>Medios del bloque</h3><p>Podés seleccionar un archivo de Supabase Storage o pegar una URL externa.</p>${mediaControl('Medio principal','media',s.media||{src:s.content?.heroImage||'',type:'image'})}<datalist id="cmsMediaUrls">${mediaAssetOptions()}</datalist></div>`;
+    if(s.type==='conceptStatement' && Array.isArray(s.items)){
+      html+=`<div class="editor-card"><h3>Imágenes de los elementos</h3><p>Opcional: podés colocar una imagen en cada sector. Si no asignás una, conservará su estilo de texto actual.</p>`;
+      s.items.forEach((label,j)=>{html+=mediaControl(`${j+1}. ${label}`,`itemMedia.${j}`,s.itemMedia?.[j]||{})});
+      html+=`</div>`;
+    }
     if(Array.isArray(s.items)){
       html+=`<div class="editor-card"><h3>Elementos</h3><div class="form-stack">`;
       s.items.forEach((it,j)=>{
@@ -133,8 +138,42 @@
     $('#sectionEditorBody').innerHTML=html;$('#sectionDialog')._draft=s;$('#sectionDialog').showModal();refreshMediaPreviews($('#sectionEditorBody'));
     $$('[data-edit-path]',$('#sectionEditorBody')).forEach(el=>el.oninput=()=>setPath(s,el.dataset.editPath,el.type==='number'?Number(el.value):el.value));
     $$('[data-media-key]',$('#sectionEditorBody')).forEach(el=>{el.addEventListener('input',()=>refreshMediaPreviews($('#sectionEditorBody')));el.onchange=()=>{const key=el.dataset.mediaKey;setPath(s,key,el.type==='checkbox'?el.checked:el.type==='number'?Number(el.value):el.value);if(key.endsWith('.src')){const base=key.slice(0,-4),url=el.value;setPath(s,base+'.type',mediaTypeFromUrl(url));const typeEl=$(`[data-media-key="${base}.type"]`,$('#sectionEditorBody'));if(typeEl)typeEl.value=mediaTypeFromUrl(url)}const block=el.closest('.cms-media-control');const preview=block?.querySelector('[data-media-preview]');if(preview&&key.endsWith('.src'))preview.innerHTML=el.value?`<span>Medio seleccionado: ${esc(el.value)}</span>`:'<span>Sin medio asignado</span>'};});
-    $$('[data-library-pick]',$('#sectionEditorBody')).forEach(el=>el.onchange=()=>{if(!el.value)return;const base=el.dataset.libraryPick;setPath(s,base+'.src',el.value);setPath(s,base+'.type',mediaTypeFromUrl(el.value));const inp=$(`[data-media-key="${base}.src"]`,$('#sectionEditorBody'));if(inp)inp.value=el.value;const typ=$(`[data-media-key="${base}.type"]`,$('#sectionEditorBody'));if(typ)typ.value=mediaTypeFromUrl(el.value)});
+    $$('[data-open-media-library]',$('#sectionEditorBody')).forEach(b=>b.onclick=()=>openVisualLibrary(b.dataset.openMediaLibrary,s));
     $$('[data-media-remove]',$('#sectionEditorBody')).forEach(b=>b.onclick=()=>{const base=b.dataset.mediaRemove;setPath(s,base+'.src','');const el=$(`[data-media-key="${base}.src"]`,$('#sectionEditorBody'));if(el)el.value='';b.closest('.cms-media-control').querySelector('[data-media-preview]').innerHTML='<span>Sin medio asignado</span>'});
+  }
+
+  function openVisualLibrary(path,draft){
+    const root=$('#sectionDialog');
+    root.querySelector('.cms-library-overlay')?.remove();
+    const overlay=document.createElement('div');overlay.className='cms-library-overlay';
+    overlay.innerHTML=`<div class="cms-library-window" role="dialog" aria-label="Seleccionar medio de la biblioteca"><div class="cms-library-heading"><div><strong>Biblioteca multimedia</strong><p>Elegí una imagen o un video y comprobá su contenido antes de aplicarlo.</p></div><button type="button" class="cms-library-close" aria-label="Cerrar">×</button></div><div class="cms-library-content"><div class="cms-library-browser"><input type="search" class="cms-library-search" placeholder="Buscar por nombre…" aria-label="Buscar medios"><div class="cms-library-grid"></div></div><aside class="cms-library-detail"><div class="cms-library-large">Seleccioná un archivo</div><strong class="cms-library-name"></strong><small class="cms-library-mime"></small><button type="button" class="btn primary cms-library-apply" disabled>Usar este medio</button></aside></div></div>`;
+    root.appendChild(overlay);
+    const close=()=>overlay.remove();overlay.querySelector('.cms-library-close').onclick=close;
+    overlay.onclick=e=>{if(e.target===overlay)close()};
+    const valid=mediaAssets.filter(a=>/^(image|video)\//.test(a.mime_type||''));let selected=null;
+    const detail=()=>{
+      const preview=overlay.querySelector('.cms-library-large'),name=overlay.querySelector('.cms-library-name'),mime=overlay.querySelector('.cms-library-mime');
+      if(!selected)return;
+      preview.innerHTML=selected.mime_type.startsWith('video/')?`<video src="${esc(selected.url)}" controls playsinline preload="metadata"></video>`:`<img src="${esc(selected.url)}" alt="Vista previa de ${esc(selected.name)}">`;
+      name.textContent=selected.name||'Archivo';mime.textContent=selected.mime_type||'';
+      overlay.querySelector('.cms-library-apply').disabled=false;
+    };
+    const draw=()=>{const q=overlay.querySelector('.cms-library-search').value.toLocaleLowerCase();const list=valid.filter(a=>(a.name||'').toLocaleLowerCase().includes(q));
+      overlay.querySelector('.cms-library-grid').innerHTML=list.map((a,i)=>`<button type="button" class="cms-library-item ${a.id===selected?.id?'is-selected':''}" data-asset-index="${i}">${(a.mime_type||'').startsWith('video/')?`<video src="${esc(a.url)}" muted preload="metadata"></video><span class="cms-library-video-tag">VIDEO</span>`:`<img src="${esc(a.url)}" loading="lazy" alt="">`}<span title="${esc(a.name)}">${esc(a.name)}</span></button>`).join('')||'<p class="cms-library-empty">No hay medios que coincidan. Subí archivos desde la sección Medios.</p>';
+      overlay.querySelectorAll('[data-asset-index]').forEach(b=>b.onclick=()=>{selected=list[Number(b.dataset.assetIndex)];draw();detail()});
+    };
+    overlay.querySelector('.cms-library-search').oninput=draw;
+    overlay.querySelector('.cms-library-apply').onclick=()=>{
+      if(!selected)return;
+      setPath(draft,path+'.src',selected.url);
+      const type=selected.mime_type.startsWith('video/')?'video':'image';setPath(draft,path+'.type',type);
+      const input=$(`[data-media-key="${path}.src"]`,$('#sectionEditorBody'));
+      const dropdown=$(`[data-media-key="${path}.type"]`,$('#sectionEditorBody'));
+      if(input)input.value=selected.url;if(dropdown)dropdown.value=type;
+      refreshMediaPreviews($('#sectionEditorBody'));close();
+    };
+    draw();
+    if(!valid.length && db.configured){loadMedia().then(()=>{close();openVisualLibrary(path,draft)})}
   }
 
   function renderPages(){

@@ -220,7 +220,7 @@
 
   function renderConcept(s,i) {
     const c=s.content||{};
-    return `<section class="section concept-section" id="${attr(s.settings?.anchor||s.id)}" data-section-index="${i}"><div class="shell concept-grid"><div>${editable('span',c.eyebrow,`sections.${i}.content.eyebrow`,'eyebrow')}${editable('h2',c.title,`sections.${i}.content.title`)}${editable('p',c.body,`sections.${i}.content.body`,'concept-lead')}${editable('p',c.note,`sections.${i}.content.note`,'concept-note')}</div><div class="sector-matrix">${(s.items||[]).map((x,j)=>`<div><span>${String(j+1).padStart(2,'0')}</span>${editable('strong',x,`sections.${i}.items.${j}`)}</div>`).join('')}</div></div></section>`;
+    return `<section class="section concept-section" id="${attr(s.settings?.anchor||s.id)}" data-section-index="${i}"><div class="shell concept-grid"><div>${editable('span',c.eyebrow,`sections.${i}.content.eyebrow`,'eyebrow')}${editable('h2',c.title,`sections.${i}.content.title`)}${editable('p',c.body,`sections.${i}.content.body`,'concept-lead')}${editable('p',c.note,`sections.${i}.content.note`,'concept-note')}</div><div class="sector-matrix">${(s.items||[]).map((x,j)=>`<div class="sector-item">${s.itemMedia?.[j]?.src?`<div class="sector-item-media">${mediaHtml(s.itemMedia[j],'','sector-item-image')}</div>`:''}<span>${String(j+1).padStart(2,'0')}</span>${editable('strong',x,`sections.${i}.items.${j}`)}</div>`).join('')}</div></div></section>`;
   }
 
   function renderPillars(s,i) {

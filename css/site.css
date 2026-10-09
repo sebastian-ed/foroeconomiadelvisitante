@@ -159,3 +159,36 @@ h1,h2,h3,h4{color:var(--ink)}
 .btn,button,.read-link{font-family:var(--font-button,var(--font-body))}
 .lead,.hero-body,.hero-summary p,.section-head>p,.section-subtitle{font-family:var(--font-subtitle,var(--font-body))}
 .article-body{font-family:var(--font-article,var(--font-heading))}
+
+/* V8.1 — Contraste consistente durante la edición visual.
+   El fondo blanco previo heredaba texto blanco de los heroes oscuros. */
+.cms-inline-mode [data-cms-path][contenteditable="true"]{caret-color:currentColor;min-width:1.5ch}
+.cms-inline-mode [data-cms-path][contenteditable="true"]:focus,
+.cms-inline-mode [data-cms-path].cms-editing{
+  background:#ffffff!important;
+  background-image:none!important;
+  color:#092e4e!important;
+  -webkit-text-fill-color:#092e4e!important;
+  caret-color:#005b91!important;
+  text-shadow:none!important;
+  opacity:1!important;
+  outline:3px solid #009ac3!important;
+  outline-offset:4px!important;
+  box-shadow:0 0 0 7px rgba(0,154,195,.22)!important;
+  padding:9px 12px!important;
+  border-radius:3px!important;
+  min-height:1.5em;
+  position:relative;
+  z-index:35;
+}
+.cms-inline-mode [data-cms-path].cms-editing *,
+.cms-inline-mode [data-cms-path][contenteditable="true"]:focus *{
+  color:#092e4e!important;
+  -webkit-text-fill-color:#092e4e!important;
+  text-shadow:none!important;
+}
+.cms-inline-mode [data-cms-path]::selection,
+.cms-inline-mode [data-cms-path] *::selection{background:#b8e9f4;color:#062c4f;-webkit-text-fill-color:#062c4f}
+
+/* V8.2: imágenes opcionales en los elementos del concepto */
+.sector-item-media{width:100%;aspect-ratio:4/3;overflow:hidden;background:#dbe5e9;margin:0 0 16px;position:relative}.sector-item-media img,.sector-item-media video,.sector-item-media iframe{display:block;width:100%;height:100%;object-fit:cover}.sector-item:has(.sector-item-media){min-height:220px}.sector-item .sector-item-media+span{margin-bottom:9px}
