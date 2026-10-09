@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#052f59">
+  <title>Foro CMS — foroeconomiadelvisitante</title>
+  <link rel="icon" href="../assets/images/favicon.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="admin.css?v=1.0.0">
+</head>
+<body>
+  <div class="admin-shell" id="adminShell">
+    <aside class="sidebar" id="sidebar">
+      <a class="admin-brand" href="../" target="_blank"><img src="../assets/images/logo-icon.webp" alt=""><div><strong>FORO CMS</strong><small>foroeconomiadelvisitante</small></div></a>
+      <nav class="admin-nav" id="adminNav">
+        <button class="active" data-view="dashboard"><i>⌂</i><span>Inicio</span></button>
+        <button data-view="visual"><i>◉</i><span>Editor visual</span></button>
+        <button data-view="home"><i>▤</i><span>Portada</span></button>
+        <button data-view="pages"><i>▱</i><span>Páginas</span></button>
+        <button data-view="posts"><i>¶</i><span>Publicaciones</span></button>
+        <button data-view="events"><i>◫</i><span>Actividades</span></button>
+        <button data-view="media"><i>▧</i><span>Medios</span></button>
+        <button data-view="inquiries"><i>✉</i><span>Consultas</span></button>
+        <button data-view="newsletter"><i>✦</i><span>Newsletter</span></button>
+        <button data-view="design"><i>◐</i><span>Diseño</span></button>
+        <button data-view="navigation"><i>↗</i><span>Navegación</span></button>
+        <button data-view="history"><i>↶</i><span>Revisiones</span></button>
+        <button data-view="settings"><i>⚙</i><span>Ajustes</span></button>
+        <button data-view="advanced"><i>{ }</i><span>JSON avanzado</span></button>
+        <button data-view="preview"><i>□</i><span>Vista previa</span></button>
+      </nav>
+      <div class="sidebar-foot"><span id="connectionDot"></span><small id="connectionText">Comprobando Supabase…</small></div>
+    </aside>
+
+    <section class="admin-main">
+      <header class="topbar">
+        <div class="top-title"><button class="mobile-menu" id="mobileMenu">☰</button><div><small>FORO / CMS</small><h1 id="viewTitle">Inicio</h1></div><span class="dirty hidden" id="dirtyBadge">Cambios sin publicar</span></div>
+        <div class="top-actions"><span id="saveState"></span><a class="btn ghost" href="../" target="_blank">Ver sitio ↗</a><button class="btn primary" id="publishSite">Publicar sitio</button><button class="avatar" id="accountButton">A</button></div>
+      </header>
+
+      <main class="workspace">
+        <section class="view active" data-view-panel="dashboard">
+          <div class="intro"><div><span class="kicker">SISTEMA EDITORIAL</span><h2>Web, contenidos y comunidad en un solo panel.</h2><p>La portada y las páginas institucionales se publican como una versión del sitio. Publicaciones, actividades, consultas y newsletter se gestionan como colecciones independientes.</p></div><button class="btn primary" data-go="visual">Editar en vivo</button></div>
+          <div class="stats-grid" id="statsGrid"></div>
+          <div class="dashboard-grid"><article class="panel"><header><div><small>PORTADA</small><h3>Estructura actual</h3></div><button class="link-btn" data-go="home">Administrar →</button></header><div id="dashboardSections"></div></article><article class="panel"><header><div><small>OPERACIÓN</small><h3>Estado del sistema</h3></div></header><div id="activityList" class="activity-list"></div></article></div>
+        </section>
+
+        <section class="view visual-view" data-view-panel="visual">
+          <div class="visual-toolbar"><div><span class="kicker">EDITOR VISUAL</span><strong>Edición directa sobre la web</strong><small>Hacé clic sobre textos marcados para editarlos. Doble clic en una sección de Inicio abre su configuración completa.</small></div><div class="visual-controls"><select id="visualPage"><option value="../index.html">Inicio</option><option value="../el-foro.html">El Foro</option><option value="../participa.html">Participá</option></select><div class="devices"><button class="active" data-device="desktop">▰</button><button data-device="tablet">▯</button><button data-device="mobile">▯</button></div><button class="btn ghost" id="visualReload">Recargar</button></div></div>
+          <div class="visual-stage" id="visualStage"><iframe id="visualFrame" src="../index.html?cms_inline_edit=1" title="Editor visual"></iframe></div>
+          <div class="visual-help"><span><i></i> EDITOR EN VIVO</span><p>Los cambios quedan locales hasta presionar <strong>Publicar sitio</strong>.</p></div>
+        </section>
+
+        <section class="view" data-view-panel="home">
+          <div class="toolbar"><div><span class="kicker">PORTADA</span><h2>Secciones de Inicio</h2><p>Ordená, editá, duplicá, ocultá o eliminá bloques. La vista pública respeta este orden.</p></div><button class="btn primary" id="addSection">+ Agregar bloque</button></div>
+          <div class="section-list" id="sectionList"></div>
+        </section>
+
+        <section class="view" data-view-panel="pages">
+          <div class="toolbar"><div><span class="kicker">PÁGINAS INSTITUCIONALES</span><h2>Contenido estructural</h2><p>Editá los textos de El Foro y Participá. También podés usar el Editor visual para cambiar estos textos en contexto.</p></div></div>
+          <div id="pagesEditor" class="settings-grid"></div>
+        </section>
+
+        <section class="view" data-view-panel="posts">
+          <div class="toolbar"><div><span class="kicker">BLOG / CONOCIMIENTO / VOCES</span><h2>Publicaciones</h2><p>Editor tipo WordPress: borradores, programación, taxonomías, SEO, imagen destacada, contenido enriquecido y tipos editoriales.</p></div><button class="btn primary" id="newPost">+ Nueva publicación</button></div>
+          <div class="list-toolbar"><input id="postSearch" type="search" placeholder="Buscar publicación…"><select id="postStatusFilter"><option value="">Todos los estados</option><option value="draft">Borradores</option><option value="published">Publicados</option><option value="scheduled">Programados</option><option value="archived">Archivados</option></select></div>
+          <div id="postList" class="content-table"></div>
+        </section>
+
+        <section class="view" data-view-panel="events">
+          <div class="toolbar"><div><span class="kicker">AGENDA</span><h2>Actividades</h2><p>Gestioná encuentros, conversatorios, talleres, hackatones y proyectos. La web solo muestra los publicados.</p></div><button class="btn primary" id="newEvent">+ Nueva actividad</button></div>
+          <div id="eventList" class="content-table"></div>
+        </section>
+
+        <section class="view" data-view-panel="media">
+          <div class="toolbar"><div><span class="kicker">SUPABASE STORAGE</span><h2>Biblioteca de medios</h2><p>Subí imágenes y documentos reutilizables en publicaciones y actividades.</p></div><label class="btn primary upload-label">+ Subir medios<input id="mediaUpload" type="file" accept="image/*,video/*,application/pdf" multiple hidden></label></div>
+          <div class="list-toolbar"><input id="mediaSearch" type="search" placeholder="Buscar archivo…"><span id="mediaCount"></span></div>
+          <div class="media-grid" id="mediaGrid"></div>
+        </section>
+
+        <section class="view" data-view-panel="inquiries">
+          <div class="toolbar"><div><span class="kicker">CONTACTO Y PARTICIPACIÓN</span><h2>Consultas recibidas</h2><p>Centralizá propuestas, artículos, temas, desafíos territoriales y consultas generales.</p></div><button class="btn ghost" id="refreshInquiries">Actualizar</button></div>
+          <div class="list-toolbar"><select id="inquiryFilter"><option value="">Todos</option><option value="new">Nuevos</option><option value="in_progress">En gestión</option><option value="closed">Cerrados</option></select></div>
+          <div id="inquiryList" class="content-table"></div>
+        </section>
+
+        <section class="view" data-view-panel="newsletter">
+          <div class="toolbar"><div><span class="kicker">COMUNIDAD</span><h2>Newsletter</h2><p>Gestioná suscriptores, prepará campañas y enviálas mediante la función de Supabase + proveedor de email.</p></div><button class="btn primary" id="newCampaign">+ Nueva campaña</button></div>
+          <div class="newsletter-stats" id="newsletterStats"></div>
+          <div class="dashboard-grid"><article class="panel"><header><div><small>CAMPAÑAS</small><h3>Historial y borradores</h3></div></header><div id="campaignList"></div></article><article class="panel"><header><div><small>BASE</small><h3>Suscriptores</h3></div></header><div id="subscriberList"></div></article></div>
+        </section>
+
+        <section class="view" data-view-panel="design">
+          <div class="toolbar"><div><span class="kicker">SISTEMA VISUAL</span><h2>Diseño global</h2><p>Paleta, tipografías, ancho, espaciado y radios.</p></div><button class="btn ghost" id="resetTheme">Restaurar diseño</button></div>
+          <div class="settings-grid"><article class="panel"><header><div><small>PALETA</small><h3>Colores</h3></div></header><div class="form-grid" id="themeColors"></div></article><article class="panel"><header><div><small>TIPOGRAFÍA</small><h3>Fuentes</h3></div></header><div class="form-stack" id="themeFonts"></div></article><article class="panel full"><header><div><small>LAYOUT</small><h3>Escala</h3></div></header><div class="form-grid cols-3" id="themeLayout"></div></article></div>
+        </section>
+
+        <section class="view" data-view-panel="navigation">
+          <div class="toolbar"><div><span class="kicker">HEADER</span><h2>Navegación</h2><p>Editá etiquetas, enlaces, orden y CTA destacado. Los submenús se conservan en cada elemento.</p></div><button class="btn primary" id="addNav">+ Agregar enlace</button></div>
+          <div id="navList" class="repeater-list"></div>
+        </section>
+
+        <section class="view" data-view-panel="history">
+          <div class="toolbar"><div><span class="kicker">VERSIONADO DEL SITIO</span><h2>Revisiones</h2><p>Cada publicación de la estructura general genera una copia recuperable.</p></div><button class="btn ghost" id="refreshHistory">Actualizar</button></div>
+          <div id="historyList" class="history-list"></div>
+        </section>
+
+        <section class="view" data-view-panel="settings">
+          <div class="toolbar"><div><span class="kicker">CONFIGURACIÓN</span><h2>Ajustes generales</h2><p>Marca, contacto, redes y SEO.</p></div></div>
+          <div class="settings-grid"><article class="panel"><header><div><small>IDENTIDAD</small><h3>Marca</h3></div></header><div class="form-stack" id="siteIdentity"></div></article><article class="panel"><header><div><small>SEO</small><h3>Metadatos</h3></div></header><div class="form-stack" id="siteSeo"></div></article><article class="panel"><header><div><small>REDES</small><h3>Perfiles</h3></div></header><div class="form-stack" id="siteSocial"></div></article></div>
+        </section>
+
+        <section class="view" data-view-panel="advanced">
+          <div class="toolbar"><div><span class="kicker">HERRAMIENTA AVANZADA</span><h2>JSON del sitio</h2><p>Editor de emergencia para la estructura global. Permite resolver casos que no cubre la interfaz visual. Validá antes de aplicar.</p></div><div class="top-actions"><button class="btn ghost" id="reloadJson">Recargar JSON</button><button class="btn primary" id="applyJson">Validar y aplicar</button></div></div>
+          <article class="panel"><label class="field"><span>Payload editable</span><textarea id="advancedJson" class="json-editor" spellcheck="false"></textarea></label><p class="json-help">Aplicar modifica el estado local. El cambio recién se guarda en Supabase cuando presionás <strong>Publicar sitio</strong>.</p></article>
+        </section>
+
+        <section class="view preview-view" data-view-panel="preview"><div class="preview-bar"><div><span class="kicker">SITIO</span><strong>Vista previa publicada/local</strong></div><button class="btn ghost" id="previewReload">Recargar</button></div><iframe id="previewFrame" src="../" title="Vista previa"></iframe></section>
+      </main>
+    </section>
+  </div>
+
+  <div class="auth-screen" id="authScreen"><div class="auth-card"><img src="../assets/images/logo-icon.webp" alt=""><span class="kicker">FORO CONTENT SYSTEM</span><h1>Administrar sitio</h1><p id="authCopy">Ingresá con un usuario habilitado en Supabase Authentication.</p><div class="notice hidden" id="configNotice">Primero configurá <code>js/supabase-config.js</code> y ejecutá <code>supabase/schema.sql</code>.</div><label>Email<input id="email" type="email" autocomplete="email" placeholder="admin@dominio.com"></label><label>Contraseña<input id="password" type="password" autocomplete="current-password" placeholder="••••••••"></label><button class="btn primary wide" id="login">Ingresar</button><p id="authStatus"></p></div></div>
+
+  <div class="account-menu hidden" id="accountMenu"><span id="userEmail"></span><button id="logout">Cerrar sesión</button></div>
+  <div class="toast" id="toast"></div>
+
+  <dialog class="editor-dialog" id="sectionDialog"><form method="dialog" class="dialog-shell"><header><div><span class="kicker">BLOQUE DE PORTADA</span><h2 id="sectionDialogTitle">Editar sección</h2></div><button value="cancel" class="icon-close">×</button></header><div id="sectionEditorBody" class="dialog-body"></div><footer><button value="cancel" class="btn ghost">Cancelar</button><button type="button" class="btn primary" id="applySection">Aplicar</button></footer></form></dialog>
+
+  <dialog class="editor-dialog wide-dialog" id="postDialog"><form method="dialog" class="dialog-shell"><header><div><span class="kicker">EDITOR DE PUBLICACIÓN</span><h2 id="postDialogTitle">Nueva publicación</h2></div><button value="cancel" class="icon-close">×</button></header><div class="dialog-body" id="postEditorBody"></div><footer><button value="cancel" class="btn ghost">Cancelar</button><button type="button" class="btn primary" id="savePost">Guardar publicación</button></footer></form></dialog>
+
+  <dialog class="editor-dialog wide-dialog" id="eventDialog"><form method="dialog" class="dialog-shell"><header><div><span class="kicker">AGENDA</span><h2 id="eventDialogTitle">Nueva actividad</h2></div><button value="cancel" class="icon-close">×</button></header><div class="dialog-body" id="eventEditorBody"></div><footer><button value="cancel" class="btn ghost">Cancelar</button><button type="button" class="btn primary" id="saveEvent">Guardar actividad</button></footer></form></dialog>
+
+  <dialog class="editor-dialog" id="campaignDialog"><form method="dialog" class="dialog-shell"><header><div><span class="kicker">NEWSLETTER</span><h2 id="campaignDialogTitle">Nueva campaña</h2></div><button value="cancel" class="icon-close">×</button></header><div class="dialog-body" id="campaignEditorBody"></div><footer><button value="cancel" class="btn ghost">Cancelar</button><button type="button" class="btn primary" id="saveCampaign">Guardar campaña</button></footer></form></dialog>
+
+  <dialog class="editor-dialog" id="inquiryDialog"><form method="dialog" class="dialog-shell"><header><div><span class="kicker">CONSULTA</span><h2 id="inquiryDialogTitle">Detalle</h2></div><button value="cancel" class="icon-close">×</button></header><div class="dialog-body" id="inquiryEditorBody"></div><footer><button value="cancel" class="btn ghost">Cerrar</button><button type="button" class="btn primary" id="saveInquiry">Guardar gestión</button></footer></form></dialog>
+
+  <dialog class="editor-dialog" id="blockDialog"><form method="dialog" class="dialog-shell"><header><div><span class="kicker">BLOQUES</span><h2>Agregar sección</h2></div><button value="cancel" class="icon-close">×</button></header><div id="blockTemplates" class="template-grid dialog-body"></div></form></dialog>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/supabase-config.js"></script>
+  <script src="../js/content.js"></script>
+  <script src="../js/db.js"></script>
+  <script src="admin.js?v=1.0.0"></script>
+</body>
+</html>
