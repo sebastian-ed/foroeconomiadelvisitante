@@ -134,8 +134,9 @@
         else html+=`<div class="editor-card cms-item-editor"><h3>Elemento ${j+1}</h3><div class="form-stack">${Object.entries(it).filter(([k,v])=>['string','number'].includes(typeof v)&&!['mediaSrc','image','src'].includes(k)).map(([k,v])=>inputField(prettyLabel(k),`items.${j}.${k}`,v,{textarea:k==='body'})).join('')}</div>${mediaControl('Medio del elemento',`items.${j}.media`,it.media||{src:it.mediaSrc||it.image||it.src||''})}</div>`;
       });html+=`</div></div>`;
     }
+    html+=`<div class="editor-card"><h3>Contenido adicional por bloques</h3><p>Agregá títulos, párrafos, imágenes, videos y listas a esta sección. Los bloques aparecen debajo del contenido habitual.</p>${richEditorHtml(s.extraHtml||'')}</div>`;
     html+=`<div class="editor-card"><h3>Configuración</h3><div class="form-grid">${Object.entries(s.settings||{}).filter(([k,v])=>['string','number'].includes(typeof v)).map(([k,v])=>inputField(prettyLabel(k),`settings.${k}`,v,{type:typeof v==='number'?'number':'text'})).join('')}</div></div>`;
-    $('#sectionEditorBody').innerHTML=html;$('#sectionDialog')._draft=s;$('#sectionDialog').showModal();refreshMediaPreviews($('#sectionEditorBody'));
+    $('#sectionEditorBody').innerHTML=html;wireRich($('#sectionEditorBody'));$('#sectionDialog')._draft=s;$('#sectionDialog').showModal();refreshMediaPreviews($('#sectionEditorBody'));
     $$('[data-edit-path]',$('#sectionEditorBody')).forEach(el=>el.oninput=()=>setPath(s,el.dataset.editPath,el.type==='number'?Number(el.value):el.value));
     $$('[data-media-key]',$('#sectionEditorBody')).forEach(el=>{el.addEventListener('input',()=>refreshMediaPreviews($('#sectionEditorBody')));el.onchange=()=>{const key=el.dataset.mediaKey;setPath(s,key,el.type==='checkbox'?el.checked:el.type==='number'?Number(el.value):el.value);if(key.endsWith('.src')){const base=key.slice(0,-4),url=el.value;setPath(s,base+'.type',mediaTypeFromUrl(url));const typeEl=$(`[data-media-key="${base}.type"]`,$('#sectionEditorBody'));if(typeEl)typeEl.value=mediaTypeFromUrl(url)}const block=el.closest('.cms-media-control');const preview=block?.querySelector('[data-media-preview]');if(preview&&key.endsWith('.src'))preview.innerHTML=el.value?`<span>Medio seleccionado: ${esc(el.value)}</span>`:'<span>Sin medio asignado</span>'};});
     $$('[data-open-media-library]',$('#sectionEditorBody')).forEach(b=>b.onclick=()=>openVisualLibrary(b.dataset.openMediaLibrary,s));
@@ -187,7 +188,9 @@
     const part=d.participa;
     html+=`<article class="page-editor-card"><h3>Participá · Encabezado</h3><div class="form-stack">${inputField('Antetítulo','pages.participa.hero.eyebrow',part.hero.eyebrow)}${inputField('Título','pages.participa.hero.title',part.hero.title,{textarea:true})}${inputField('Descripción','pages.participa.hero.body',part.hero.body,{textarea:true})}</div></article>`;
     html+=`<article class="page-editor-card"><h3>Participá · Opciones</h3><div class="form-stack">${part.options.map((x,i)=>`${inputField(`Opción ${i+1} · título`,`pages.participa.options.${i}.title`,x.title)}${inputField(`Opción ${i+1} · descripción`,`pages.participa.options.${i}.body`,x.body,{textarea:true})}`).join('')}</div></article>`;
-    $('#pagesEditor').innerHTML=html;$$('[data-edit-path]',$('#pagesEditor')).forEach(el=>el.oninput=()=>{setPath(state,el.dataset.editPath,el.value);markDirty()});
+    const editablePages=[['el-foro','El Foro'],['participa','Participá'],['conocimiento','Conocimiento'],['actividades','Actividades'],['voces','Voces'],['newsletter','Newsletter']];
+    editablePages.forEach(([key,title])=>{html+=`<article class="page-editor-card"><h3>${title} · Bloques adicionales</h3><p>Creá secciones editoriales, títulos, texto, fotografías, entrevistas y videos. Podés reordenarlos dentro del editor.</p>${richEditorHtml(d[key]?.extraHtml||'')}</article>`});
+    $('#pagesEditor').innerHTML=html;$$('[data-rich-editor]',$('#pagesEditor')).forEach((ed,i)=>{wireRich(ed.closest('.page-editor-card'));ed.addEventListener('input',()=>{const key=editablePages[i][0];state.pages[key]??={};state.pages[key].extraHtml=ed.innerHTML;markDirty()})});$$('[data-edit-path]',$('#pagesEditor')).forEach(el=>el.oninput=()=>{setPath(state,el.dataset.editPath,el.value);markDirty()});
   }
 
   function renderDesign(){
@@ -235,8 +238,34 @@
   }
 
   function mediaDatalist(){return `<datalist id="mediaUrlList">${mediaAssets.filter(a=>(a.mime_type||'').startsWith('image/')).map(a=>`<option value="${esc(a.url)}">${esc(a.name)}</option>`).join('')}</datalist>`}
-  function richEditorHtml(content=''){return `<div class="rich-toolbar" data-rich-toolbar><button type="button" data-cmd="bold"><b>B</b></button><button type="button" data-cmd="italic"><i>I</i></button><button type="button" data-cmd="formatBlock" data-val="h2">H2</button><button type="button" data-cmd="formatBlock" data-val="h3">H3</button><button type="button" data-cmd="formatBlock" data-val="p">P</button><button type="button" data-cmd="insertUnorderedList">• Lista</button><button type="button" data-cmd="insertOrderedList">1. Lista</button><button type="button" data-cmd="formatBlock" data-val="blockquote">❝</button><button type="button" data-cmd="createLink">Link</button><button type="button" data-cmd="removeFormat">Limpiar</button></div><div class="rich-editor" contenteditable="true" data-rich-editor>${content||''}</div>`}
-  function wireRich(root){const ed=$('[data-rich-editor]',root);$$('[data-cmd]',root).forEach(b=>b.onclick=()=>{ed.focus();let val=b.dataset.val||null;if(b.dataset.cmd==='createLink')val=prompt('URL del enlace:','https://');if(b.dataset.cmd==='formatBlock')val=`<${val}>`;if(val===null&&b.dataset.cmd==='createLink')return;document.execCommand(b.dataset.cmd,false,val)});return ed}
+  function richEditorHtml(content=''){
+    return `<div class="rich-toolbar" data-rich-toolbar><button type="button" data-cmd="bold"><b>B</b></button><button type="button" data-cmd="italic"><i>I</i></button><button type="button" data-cmd="formatBlock" data-val="h2">H2</button><button type="button" data-cmd="formatBlock" data-val="h3">H3</button><button type="button" data-cmd="formatBlock" data-val="p">P</button><button type="button" data-cmd="insertUnorderedList">• Lista</button><button type="button" data-cmd="insertOrderedList">1. Lista</button><button type="button" data-cmd="formatBlock" data-val="blockquote">❝</button><button type="button" data-cmd="createLink">Link</button><button type="button" data-cmd="removeFormat">Limpiar</button></div><div class="block-add-bar"><span>Agregar bloque</span><button type="button" data-add-rich="h2">Título</button><button type="button" data-add-rich="h3">Subtítulo</button><button type="button" data-add-rich="p">Párrafo</button><button type="button" data-add-rich="image">Imagen</button><button type="button" data-add-rich="youtube">YouTube</button><button type="button" data-add-rich="video">Video propio</button><button type="button" data-add-rich="blockquote">Cita</button><button type="button" data-add-rich="hr">Separador</button><button type="button" data-add-rich="ul">Lista</button></div><div class="rich-editor" contenteditable="true" data-rich-editor aria-label="Editor de bloques">${content||''}</div>`;
+  }
+  function richYouTubeId(value=''){
+    try {const u=new URL(value);if(u.hostname==='youtu.be')return /^[\w-]{11}$/.test(u.pathname.slice(1))?u.pathname.slice(1):'';if(/(^|\.)youtube(?:-nocookie)?\.com$/.test(u.hostname)){const id=u.searchParams.get('v')||u.pathname.split('/').filter(Boolean).pop();return /^[\w-]{11}$/.test(id)?id:'';}}catch{}return '';
+  }
+  function wireRich(root){
+    const ed=$('[data-rich-editor]',root);if(!ed)return null;
+    $$('[data-cmd]',root).forEach(b=>b.onclick=()=>{ed.focus();let val=b.dataset.val||null;if(b.dataset.cmd==='createLink'){val=prompt('URL del enlace:','https://');if(!val||!/^https?:\/\//i.test(val))return;}if(b.dataset.cmd==='formatBlock')val=`<${val}>`;document.execCommand(b.dataset.cmd,false,val);ed.dispatchEvent(new Event('input',{bubbles:true}));});
+    $$('[data-add-rich]',root).forEach(b=>b.onclick=()=>{
+      const type=b.dataset.addRich;let element=document.createElement(type==='image'||type==='video'||type==='youtube'?'figure':type);
+      if(type==='image'||type==='video'||type==='youtube'){
+        const examples=mediaAssets.filter(a=>type==='image'?(a.mime_type||'').startsWith('image/'):(a.mime_type||'').startsWith('video/')).slice(0,18);
+        const hint=examples.length?'\nBiblioteca: '+examples.map((x,i)=>`${i+1}. ${x.name}`).join(' | '):'';
+        let raw=prompt(type==='youtube'?'Pegá el enlace de YouTube:':'Pegá la URL del archivo, o indicá el número de un medio de tu biblioteca:'+hint,'');
+        if(!raw)return;raw=raw.trim();if(/^\d+$/.test(raw)&&examples[Number(raw)-1])raw=examples[Number(raw)-1].url;
+        if(type==='youtube'){
+          const id=richYouTubeId(raw);if(!id){toast('Enlace YouTube no válido');return;}
+          element.className='rich-media rich-youtube';element.dataset.youtube=id;
+          element.innerHTML=`<iframe src="https://www.youtube-nocookie.com/embed/${id}?rel=0&controls=1" title="Video de entrevista" loading="lazy" allow="accelerometer; encrypted-media; picture-in-picture" allowfullscreen></iframe><figcaption>Video de YouTube</figcaption>`;
+        }else if(/^https?:\/\//i.test(raw)||raw.startsWith('/')){
+          element.className='rich-media';let media=document.createElement(type==='image'?'img':'video');media.src=raw;if(type==='video'){media.controls=true;media.playsInline=true;media.preload='metadata';}else media.alt='Imagen del artículo';element.append(media);
+          const cap=document.createElement('figcaption');cap.textContent='Descripción del medio';element.append(cap);
+        }else {toast('Ingresá una URL válida');return;}
+      }else if(type==='hr'){}else if(type==='ul'){element.innerHTML='<li>Primer elemento</li>';}else{element.textContent=type==='p'?'Escribí tu párrafo…':type==='blockquote'?'Escribí una cita…':type==='h2'?'Nuevo título':'Nuevo subtítulo';}
+      ed.append(element,document.createElement('p'));ed.dispatchEvent(new Event('input',{bubbles:true}));element.scrollIntoView({block:'nearest',behavior:'smooth'});
+    });return ed;
+  }
 
   function openPost(post=null){
     editingPost=post?clone(post):{title:'',slug:'',excerpt:'',content_html:'',type:'article',category:'',tags:[],author_name:state.site.shortName,author_role:'',status:'draft',published_at:new Date().toISOString().slice(0,16),featured:false,featured_image:'',references:[],seo_title:'',seo_description:''};
@@ -345,7 +374,7 @@
   $('#accountButton').onclick=()=>$('#accountMenu').classList.toggle('hidden');$('#logout').onclick=()=>db.client?.auth.signOut();
   $('#login').onclick=async()=>{try{$('#authStatus').textContent='Ingresando…';const {error}=await db.client.auth.signInWithPassword({email:$('#email').value.trim(),password:$('#password').value});if(error)throw error;$('#authStatus').textContent=''}catch(e){$('#authStatus').textContent=e.message}};
   $('#addSection').onclick=()=>{$('#blockTemplates').innerHTML=Object.entries(typeMeta).map(([type,m])=>`<button type="button" class="template-card" data-template="${type}"><strong>${m[0]} ${m[1]}</strong><small>${m[2]}</small></button>`).join('');$('#blockDialog').showModal();$$('[data-template]').forEach(b=>b.onclick=()=>{const base=defaults.sections.find(s=>s.type===b.dataset.template);if(!base)return;const c=clone(base);c.id=uid(c.type);c.label=`${typeMeta[c.type][1]} — nuevo`;c.settings={...(c.settings||{}),anchor:c.id};state.sections.push(c);$('#blockDialog').close();markDirty();renderSections();renderDashboard();openSectionEditor(state.sections.length-1)})};
-  $('#applySection').onclick=()=>{state.sections[editingSection]=clone($('#sectionDialog')._draft);$('#sectionDialog').close();editingSection=null;markDirty();renderSections();renderDashboard();toast('Bloque actualizado')};
+  $('#applySection').onclick=()=>{const d=$('#sectionDialog')._draft;d.extraHtml=$('[data-rich-editor]',$('#sectionEditorBody'))?.innerHTML||'';state.sections[editingSection]=clone(d);$('#sectionDialog').close();editingSection=null;markDirty();renderSections();renderDashboard();toast('Bloque actualizado')};
   $('#resetTheme').onclick=()=>{if(confirm('¿Restaurar diseño por defecto?')){state.theme=clone(defaults.theme);markDirty();renderDesign()}};
   $('#addNav').onclick=()=>{state.navigation.push({id:uid('nav'),label:'Nuevo enlace',href:'#',featured:false,children:[]});markDirty();renderNavigation()};
   $('#inviteSubmit').onclick=inviteCollaborator;$('#newPost').onclick=()=>openPost();$('#savePost').onclick=savePost;$('#postSearch').oninput=renderPosts;$('#postStatusFilter').onchange=renderPosts;

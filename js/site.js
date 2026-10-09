@@ -51,12 +51,12 @@
   function sanitizeRichHtml(html='') {
     const parser = new DOMParser();
     const doc = parser.parseFromString(`<div>${html}</div>`, 'text/html');
-    const allowed = new Set(['P','H2','H3','H4','UL','OL','LI','STRONG','EM','B','I','A','BLOCKQUOTE','BR','HR','FIGURE','FIGCAPTION','IMG','CODE','PRE']);
+    const allowed = new Set(['P','H2','H3','H4','UL','OL','LI','STRONG','EM','B','I','A','BLOCKQUOTE','BR','HR','FIGURE','FIGCAPTION','IMG','VIDEO','SOURCE','IFRAME','CODE','PRE']);
     doc.body.querySelectorAll('*').forEach(el => {
       if (el.tagName === 'DIV' && el === doc.body.firstElementChild) return;
       if (!allowed.has(el.tagName)) { el.replaceWith(...el.childNodes); return; }
       [...el.attributes].forEach(a => {
-        const safe = (el.tagName === 'A' && ['href','target','rel'].includes(a.name)) || (el.tagName === 'IMG' && ['src','alt','loading'].includes(a.name));
+        const safe = (el.tagName === 'A' && ['href','target','rel'].includes(a.name)) || (el.tagName === 'IMG' && ['src','alt','loading'].includes(a.name)) || (el.tagName === 'VIDEO' && ['src','controls','playsinline','preload','poster'].includes(a.name)) || (el.tagName === 'SOURCE' && ['src','type'].includes(a.name)) || (el.tagName === 'IFRAME' && ['src','title','loading','allow','allowfullscreen'].includes(a.name));
         if (!safe) el.removeAttribute(a.name);
       });
       if (el.tagName === 'A') {
@@ -64,7 +64,9 @@
         if (/^javascript:/i.test(href)) el.removeAttribute('href');
         el.setAttribute('rel','noopener noreferrer');
       }
-      if (el.tagName === 'IMG') el.setAttribute('loading','lazy');
+      if (el.tagName === 'IMG') { if (!/^https?:\/\//i.test(el.getAttribute('src')||'') && !(el.getAttribute('src')||'').startsWith('/')) el.removeAttribute('src'); el.setAttribute('loading','lazy'); }
+      if (['VIDEO','SOURCE'].includes(el.tagName) && !/^https?:\/\//i.test(el.getAttribute('src')||'')) el.removeAttribute('src');
+      if (el.tagName === 'IFRAME') {const src=el.getAttribute('src')||'';if (!/^https:\/\/www\.youtube-nocookie\.com\/embed\/[\w-]{11}(?:\?|$)/.test(src)) {el.remove();return;} el.setAttribute('loading','lazy');el.setAttribute('referrerpolicy','strict-origin-when-cross-origin');}
     });
     return doc.body.firstElementChild?.innerHTML || '';
   }
@@ -274,7 +276,7 @@
 
   function renderHome() {
     const renderers = {heroForum:renderHero,conceptStatement:renderConcept,pillars:renderPillars,collectionFeed:(s,i)=>renderCollection(s,i,'knowledge'),activitiesFeed:renderActivities,voicesFeed:(s,i)=>renderCollection(s,i,'voices'),joinCta:renderJoin};
-    $('#main').innerHTML = (state.sections||[]).map((s,i)=>{if(s.enabled===false)return '';let html=renderers[s.type]?.(s,i)||'';if(s.type!=='heroForum'&&s.media?.src){const visual=`<div class="cms-section-media">${mediaHtml(s.media,'','cms-section-media-content')}</div>`;html=html.replace(/(<section\b[^>]*>)/,`$1${visual}`)}return html}).join('');
+    $('#main').innerHTML = (state.sections||[]).map((s,i)=>{if(s.enabled===false)return '';let html=renderers[s.type]?.(s,i)||'';if(s.type!=='heroForum'&&s.media?.src){const visual=`<div class="cms-section-media">${mediaHtml(s.media,'','cms-section-media-content')}</div>`;html=html.replace(/(<section\b[^>]*>)/,`$1${visual}`)}if(s.extraHtml){const extra=`<div class="shell cms-extra-content article-body">${sanitizeRichHtml(s.extraHtml)}</div>`;html=html.replace(/<\/section>\s*$/,extra+'</section>')}return html}).join('');
   }
 
   function renderInternalHero(data, basePath) {
@@ -433,6 +435,9 @@
     else if (page==='terms') renderLegal('terms');
     else if (page==='newsletter') renderNewsletterPage();
     else $('#main').innerHTML=notFound();
+    if(page!=='home' && state.pages?.[page]?.extraHtml && !['post','event'].includes(page)){
+      const extra=document.createElement('section');extra.className='section cms-page-extra';extra.innerHTML=`<div class="shell article-body">${sanitizeRichHtml(state.pages[page].extraHtml)}</div>`;$('#main').append(extra);
+    }
     setupInlineEditing();
     enhanceMediaPlayback();
   }

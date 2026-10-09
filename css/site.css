@@ -202,3 +202,10 @@ html body .btn,html body button,html body .read-link{font-family:var(--font-butt
 html body .eyebrow,html body .post-meta,html body .hero-kicker,html body .article-kicker,html body .section-kicker{font-family:var(--font-eyebrow,var(--font-body))}
 html body .article-body,html body .article-body p,html body .article-body li,html body .rich-article{font-family:var(--font-article,var(--font-body))}
 html body .article-body h2,html body .article-body h3,html body .article-body h4{font-family:var(--font-heading)!important}
+/* CMS: componentes editoriales libres */
+.cms-extra-content,.cms-page-extra{padding-top:48px;padding-bottom:48px}
+.article-body figure.rich-media{max-width:100%;margin:30px 0}
+.article-body figure.rich-media iframe,.article-body figure.rich-media video{width:100%;aspect-ratio:16/9;border:0;display:block;background:#032b52}
+.article-body figure.rich-media img{width:100%;height:auto;display:block}
+.article-body figure.rich-media figcaption{font-size:12px;opacity:.7;margin-top:9px}
+.article-body iframe{max-width:100%}
