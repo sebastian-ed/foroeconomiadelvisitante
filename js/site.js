@@ -136,7 +136,7 @@
     const social = Object.entries(s.social || {}).filter(([,url])=>url);
     $('#siteFooter').innerHTML = `
       <div class="footer-top shell">
-        <div class="footer-brand"><img src="assets/images/isotipo-blanco.png" alt=""><strong>${esc(s.shortName)}</strong><p>${esc(s.footerNote)}</p></div>
+        <div class="footer-brand"><img src="${attr(s.footerIcon||s.icon)}" alt=""><strong>${esc(s.shortName)}</strong><p>${esc(s.footerNote)}</p></div>
         <div class="footer-links"><div><span>Explorar</span><a href="el-foro.html">El Foro</a><a href="conocimiento.html">Conocimiento</a><a href="actividades.html">Actividades</a><a href="voces.html">Voces</a></div><div><span>Participar</span><a href="participa.html">Enviar una propuesta</a><a href="mailto:${attr(s.contactEmail)}">Contacto</a><a href="admin/">Administración</a></div></div>
         <div class="footer-newsletter"><span>BOLETÍN DEL FORO</span><h3>Ideas, informes y actividades en tu correo.</h3><form id="newsletterForm"><input type="email" name="email" placeholder="tu@email.com" required aria-label="Email"><button type="submit">Suscribirme</button><small id="newsletterStatus">Sin spam. <a href="newsletter.html">Gestioná tu suscripción</a> cuando quieras.</small></form></div>
       </div>
@@ -154,12 +154,32 @@
     return `<div class="section-head ${width}">${editable('span',s.content?.eyebrow,`sections.${i}.content.eyebrow`,'eyebrow')}${editable('h2',s.content?.title,`sections.${i}.content.title`)}${editable('p',s.content?.body,`sections.${i}.content.body`,'lead')}</div>`;
   }
 
+  function mediaHtml(media={}, fallback='', cls='section-media') {
+    const m={type:'image',src:'',poster:'',fit:'cover',positionX:'center',positionY:'center',zoom:100,autoplay:true,mute:true,loop:true,controls:false,startAt:0,endAt:0,cleanEmbed:true,...media};
+    const src=m.src||fallback; if(!src)return '';
+    const type=m.type==='image'&&/(?:youtu\.be|youtube\.com)/i.test(src)?'youtube':m.type;
+    const pos=`object-fit:${m.fit==='contain'?'contain':'cover'};object-position:${['left','center','right'].includes(m.positionX)?m.positionX:'center'} ${['top','center','bottom'].includes(m.positionY)?m.positionY:'center'};transform:scale(${Math.max(.7,Math.min(2.2,Number(m.zoom||100)/100))})`;
+    if(type==='youtube'){
+      let id='';try{const u=new URL(src,location.href);id=u.hostname.includes('youtu.be')?u.pathname.slice(1):u.searchParams.get('v')||u.pathname.split('/').at(-1)}catch(e){return ''}
+      if(!/^[A-Za-z0-9_-]{11}$/.test(id))return '';
+      const start=Math.max(0,Number(m.startAt)||0),end=Math.max(0,Number(m.endAt)||0);
+      const qs=new URLSearchParams({autoplay:m.autoplay?'1':'0',mute:m.mute?'1':'0',controls:m.controls&&!m.cleanEmbed?'1':'0',playsinline:'1',rel:'0',loop:m.loop?'1':'0',playlist:id,start:String(start)});
+      if(end>start)qs.set('end',String(end));if(m.captions)qs.set('cc_load_policy','1');
+      return `<iframe class="${cls} media-video" src="https://www.youtube-nocookie.com/embed/${id}?${qs}" title="Video del Foro" loading="lazy" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen style="border:0;${m.cleanEmbed?'pointer-events:none;':''}"></iframe>`;
+    }
+    if(type==='video')return `<video class="${cls} media-video" src="${attr(src)}" ${m.poster?`poster="${attr(m.poster)}"`:''} ${m.autoplay?'autoplay':''} ${m.mute?'muted':''} ${m.loop?'loop':''} ${m.controls?'controls':''} playsinline preload="metadata" style="${pos}" data-start="${Math.max(0,Number(m.startAt)||0)}" data-end="${Math.max(0,Number(m.endAt)||0)}"></video>`;
+    return `<img class="${cls}" src="${attr(src)}" alt="Imagen del Foro" loading="lazy" style="${pos}">`;
+  }
+  function enhanceMediaPlayback(){document.querySelectorAll('video[data-start]').forEach(v=>{const a=Number(v.dataset.start)||0,b=Number(v.dataset.end)||0;if(a>0){v.addEventListener('loadedmetadata',()=>{if(v.duration>a)v.currentTime=a},{once:true})}if(b>a)v.addEventListener('timeupdate',()=>{if(v.currentTime>=b){if(v.loop)v.currentTime=a;else v.pause()}})})}
   function renderHero(s,i) {
     const c=s.content||{};
-    return `<section class="hero-forum" id="${attr(s.settings?.anchor||s.id)}" data-section-index="${i}">
-      <div class="shell hero-editorial-layout">
-        <div class="hero-heading-row"><span class="hero-side-index">FORO / ARGENTINA<br>ECONOMÍA DEL VISITANTE</span><div class="hero-headline">${editable('span',c.eyebrow,`sections.${i}.content.eyebrow`,'eyebrow')}${editable('h1',c.title,`sections.${i}.content.title`)}</div></div>
-        <div class="hero-bottom-row"><div class="hero-abstract-mark"><img src="assets/images/isotipo-blanco.png" alt=""/><span>CONOCIMIENTO<br>ENCUENTRO<br>ACCIÓN</span></div><div class="hero-summary">${editable('p',c.body,`sections.${i}.content.body`,'hero-body')}<div class="hero-actions"><a class="btn primary" href="${attr(c.primaryHref)}">${esc(c.primaryLabel)} <span aria-hidden="true">↗</span></a><a class="btn text" href="${attr(c.secondaryHref)}">${esc(c.secondaryLabel)} <span aria-hidden="true">↗</span></a></div></div><span class="hero-vertical-id">UNA INICIATIVA ABIERTA Y COLABORATIVA</span></div>
+    const image = c.heroImage || 'assets/images/hero-territorio.jpg';
+    const media=(s.media?.src)?s.media:{type:"image",src:image};
+    return `<section class="hero-forum cinematic-hero" id="${attr(s.settings?.anchor||s.id)}" data-section-index="${i}">
+      <div class="hero-media cms-hero-media">${mediaHtml(media,image,"hero-media-content")}<div class="hero-media-shade"></div></div>
+      <div class="shell cinematic-layout"><div class="hero-kicker"><span>ARGENTINA · PERSPECTIVA FEDERAL</span><span>FORO / ECONOMÍA DEL VISITANTE</span></div>
+        <div class="cinematic-title">${editable('span',c.eyebrow,`sections.${i}.content.eyebrow`,'eyebrow')}${editable('h1',c.title,`sections.${i}.content.title`)}</div>
+        <div class="cinematic-bottom"><div class="cinematic-index"><span>01 — 03</span><span>CONOCIMIENTO · ENCUENTRO · ACCIÓN</span></div><div class="cinematic-intro">${editable('p',c.body,`sections.${i}.content.body`,'hero-body')}<div class="hero-actions"><a class="btn primary" href="${attr(c.primaryHref)}">${esc(c.primaryLabel)} <span>↗</span></a><a class="btn text light" href="${attr(c.secondaryHref)}">${esc(c.secondaryLabel)} <span>↗</span></a></div></div><a class="scroll-cue" href="#economia-del-visitante" aria-label="Explorar el Foro">DESLIZÁ PARA EXPLORAR ↓</a></div>
       </div>
       <div class="hero-ribbon"><div class="shell"><span>Conocimiento</span><i></i><span>Encuentro</span><i></i><span>Acción</span></div></div>
     </section>`;
@@ -211,7 +231,7 @@
 
   function renderHome() {
     const renderers = {heroForum:renderHero,conceptStatement:renderConcept,pillars:renderPillars,collectionFeed:(s,i)=>renderCollection(s,i,'knowledge'),activitiesFeed:renderActivities,voicesFeed:(s,i)=>renderCollection(s,i,'voices'),joinCta:renderJoin};
-    $('#main').innerHTML = (state.sections||[]).map((s,i)=>s.enabled===false?'':(renderers[s.type]?.(s,i)||'')).join('');
+    $('#main').innerHTML = (state.sections||[]).map((s,i)=>{if(s.enabled===false)return '';let html=renderers[s.type]?.(s,i)||'';if(s.type!=='heroForum'&&s.media?.src){const visual=`<div class="cms-section-media">${mediaHtml(s.media,'','cms-section-media-content')}</div>`;html=html.replace(/(<section\b[^>]*>)/,`$1${visual}`)}return html}).join('');
   }
 
   function renderInternalHero(data, basePath) {
@@ -349,7 +369,10 @@
       });
       el.addEventListener('keydown',e=>{if(e.key==='Enter'&&!['P'].includes(el.tagName)){e.preventDefault();el.blur();}});
     });
-    $$('[data-section-index]').forEach(sec=>sec.addEventListener('dblclick',e=>{if(e.target.closest('[data-cms-path]'))return;parent.postMessage({type:'foro:edit-section',index:Number(sec.dataset.sectionIndex)},'*');}));
+    $$('[data-section-index]').forEach(sec=>{
+      const b=document.createElement('button');b.type='button';b.className='cms-section-edit-button';b.textContent='✎ Editar sección / medios';b.onclick=e=>{e.preventDefault();e.stopPropagation();parent.postMessage({type:'foro:edit-section',index:Number(sec.dataset.sectionIndex)},'*')};sec.appendChild(b);
+      sec.addEventListener('dblclick',e=>{if(e.target.closest('[data-cms-path]'))return;parent.postMessage({type:'foro:edit-section',index:Number(sec.dataset.sectionIndex)},'*')});
+    });
   }
 
   function renderCurrentPage() {
@@ -368,6 +391,7 @@
     else if (page==='newsletter') renderNewsletterPage();
     else $('#main').innerHTML=notFound();
     setupInlineEditing();
+    enhanceMediaPlayback();
   }
 
   addEventListener('message', e => {
