@@ -94,7 +94,17 @@
     const requested=[...new Set(keys.map(k=>theme[k]).filter(f=>GOOGLE_FONT_FAMILIES.includes(f)))];
     const linkId='foro-google-fonts';let link=document.getElementById(linkId);
     if(!link){link=document.createElement('link');link.id=linkId;link.rel='stylesheet';document.head.appendChild(link)}
-    link.href=requested.length?'https://fonts.googleapis.com/css2?'+requested.map(f=>'family='+encodeURIComponent(f).replace(/%20/g,'+')+':wght@400;500;600;700').join('&')+'&display=swap':'';
+    // Cada familia se carga de forma independiente: algunas serif no admiten los pesos 500–700.
+    // Una petición combinada inválida podía hacer fallar TODAS las fuentes elegidas.
+    link.remove();
+    document.querySelectorAll('link[data-foro-font-family]').forEach(el=>el.remove());
+    requested.forEach((family,index)=>{
+      const el=document.createElement('link');
+      el.rel='stylesheet';
+      el.dataset.foroFontFamily=family;
+      el.href='https://fonts.googleapis.com/css2?family='+encodeURIComponent(family).replace(/%20/g,'+')+'&display=swap';
+      document.head.appendChild(el);
+    });
   }
 
   function applyTheme() {
@@ -113,8 +123,8 @@
     root.setProperty('--font-button',fontStack(t.buttonFont || t.bodyFont,'Arial'));
     root.setProperty('--font-eyebrow',fontStack(t.eyebrowFont || t.bodyFont,'Arial'));
     root.setProperty('--font-article',fontStack(t.articleFont || t.headingFont,'Georgia'));
-    root.setProperty('--font-body', `'${t.bodyFont || 'Manrope'}', system-ui, sans-serif`);
-    root.setProperty('--font-heading', `'${t.headingFont || 'Source Serif 4'}', Georgia, serif`);
+    root.setProperty('--font-body',fontStack(t.bodyFont || 'DM Sans','Arial'));
+    root.setProperty('--font-heading',fontStack(t.headingFont || 'Instrument Serif','Georgia'));
   }
 
 
