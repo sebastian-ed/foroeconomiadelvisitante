@@ -76,7 +76,7 @@
     async savePost(post) {
       if (!client) throw new Error('Supabase no está configurado');
       const userId = await currentUserId();
-      const payload = cleanRecord({ ...post, updated_by:userId });
+      const payload = cleanRecord({ ...post, updated_by:userId, ...(!post.id?{created_by:userId}:{}) });
       const { data, error } = await client.from('posts').upsert(payload,{onConflict:'slug'}).select().single();
       if (error) throw error;
       return data;

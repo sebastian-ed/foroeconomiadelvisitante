@@ -23,6 +23,7 @@
         <button data-view="posts"><i>¶</i><span>Publicaciones</span></button>
         <button data-view="events"><i>◫</i><span>Actividades</span></button>
         <button data-view="media"><i>▧</i><span>Medios</span></button>
+        <button data-view="users"><i>♙</i><span>Colaboradores</span></button>
         <button data-view="inquiries"><i>✉</i><span>Consultas</span></button>
         <button data-view="newsletter"><i>✦</i><span>Newsletter</span></button>
         <button data-view="design"><i>◐</i><span>Diseño</span></button>
@@ -81,6 +82,7 @@
           <div class="media-grid" id="mediaGrid"></div>
         </section>
 
+        <section class="view" data-view-panel="users"><div class="toolbar"><div><span class="kicker">EQUIPO EDITORIAL</span><h2>Colaboradores</h2><p>Invitá autores y editores, asigná roles y gestioná accesos. Solo administradores.</p></div><small id="userRoleLabel"></small></div><article class="panel"><header><h3>Invitar colaborador</h3></header><div class="form-grid"><label class="field"><span>Correo</span><input type="email" id="inviteEmail" placeholder="persona@institucion.org"></label><label class="field"><span>Nombre</span><input id="inviteName" placeholder="Nombre y apellido"></label><label class="field"><span>Rol</span><select id="inviteRole"><option value="author">Autor</option><option value="editor">Editor</option><option value="admin">Administrador</option></select></label></div><button type="button" class="btn primary" id="inviteSubmit">Generar invitación</button><p id="inviteResult" style="overflow-wrap:anywhere"></p></article><article class="panel"><header><h3>Equipo</h3></header><div id="collaboratorsList"></div></article></section>
         <section class="view" data-view-panel="inquiries">
           <div class="toolbar"><div><span class="kicker">CONTACTO Y PARTICIPACIÓN</span><h2>Consultas recibidas</h2><p>Centralizá propuestas, artículos, temas, desafíos territoriales y consultas generales.</p></div><button class="btn ghost" id="refreshInquiries">Actualizar</button></div>
           <div class="list-toolbar"><select id="inquiryFilter"><option value="">Todos</option><option value="new">Nuevos</option><option value="in_progress">En gestión</option><option value="closed">Cerrados</option></select></div>

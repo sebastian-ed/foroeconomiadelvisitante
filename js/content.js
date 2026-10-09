@@ -19,22 +19,22 @@ window.FORO_DEFAULT_CONTENT = {
     footerNote: "Iniciativa abierta y colaborativa, con vocación nacional y proyección federal."
   },
   theme: {
-    background: "#05080c",
-    paper: "#0d1117",
-    ink: "#f3f0e9",
-    text: "#e5e7e8",
-    muted: "#acb7c0",
-    line: "#303941",
+    background: "#f4f5f3",
+    paper: "#ffffff",
+    ink: "#052b4a",
+    text: "#16354b",
+    muted: "#627487",
+    line: "#d5dadd",
     navy: "#063e76",
-    navyDeep: "#052b4a",
-    cyan: "#7cb6d2",
-    cyanSoft: "#152b3c",
-    warm: "#141d25",
+    navyDeep: "#032b52",
+    cyan: "#0d7ea6",
+    cyanSoft: "#dff5fb",
+    warm: "#e8edf0",
     bodyFont: "DM Sans",
     headingFont: "Instrument Serif",
-    maxWidth: 1440,
+    maxWidth: 1380,
     radius: 0,
-    sectionSpace: 132
+    sectionSpace: 124
   },
   navigation: [
     { id: "nav-home", label: "Inicio", href: "index.html" },
@@ -180,7 +180,7 @@ window.FORO_DEFAULT_CONTENT = {
   pages: {
     "el-foro": {
       hero: { eyebrow: "EL FORO", title: "Un espacio para ampliar la mirada sobre el turismo", body: "El Foro nace para comprender el valor económico, social y territorial que generan los visitantes y convertir ese conocimiento en mejores conversaciones, decisiones e iniciativas." },
-      intro: { title: "Quiénes somos", body: "El Foro para el Desarrollo de la Economía del Visitante es una iniciativa abierta y colaborativa, con vocación nacional. Busca articular ideas, producir información útil y promover diálogos interdisciplinarios entre empresas, instituciones, organismos públicos, investigadores y comunidades." },
+      intro: { title: "Quiénes somos", body: "El Foro para el Desarrollo de la Economía del Visitante nace con el propósito de proponer una nueva mirada sobre la actividad turística nacional y regional, entendiendo al turismo no solo como un sector de servicios, sino como una actividad estratégica para el desarrollo económico, social, cultural y territorial.\nBuscamos generar un espacio de encuentro, reflexión y acción, capaz de articular ideas, producir información útil y promover diálogos interdisciplinarios que contribuyan al desarrollo de una economía del visitante más competitiva, sostenible e inclusiva. Nuestra mirada incorpora no solo a las empresas vinculadas directa o indirectamente con el turismo, sino también a las comunidades y al impacto que esta actividad genera sobre sus oportunidades y calidad de vida.\nEntendemos al visitante como un actor central en la dinámica de los territorios. Conocer sus tendencias, comportamientos y necesidades —ya sea en el turismo nacional, regional e internacional o en los desplazamientos de excursionistas— permite tomar mejores decisiones, identificar oportunidades y diseñar estrategias de desarrollo con mayor impacto.\nAl mismo tiempo, promovemos que los propios residentes redescubran sus territorios, reconozcan su patrimonio y fortalezcan su identidad a partir de nuevas formas de experimentar y valorar su entorno.\nEl Foro impulsa la circulación y el intercambio de conocimiento a través de ensayos, artículos de opinión, análisis de actualidad, información, investigaciones y diálogos interdisciplinarios sobre la evolución de la economía del visitante y su impacto en las distintas regiones del país. La Comisión Promotora recibirá y promoverá contenidos que contribuyan al debate de ideas y a la construcción de propuestas concretas para un turismo sostenible, capaz de generar un impacto económico, cultural y social positivo.\nEn definitiva, buscamos conectar actores, conocimiento, datos, innovación y experiencias para transformar ideas en iniciativas que impulsen el desarrollo de los territorios y el bienestar de sus comunidades.\nComisión Promotora del Foro para el Desarrollo de la Economía del Visitante\n[Nombres]" },
       mission: {
         missionTitle: "Misión", missionBody: "Conectar actores, generar conocimiento y promover iniciativas que impulsen el desarrollo de la economía del visitante y su impacto positivo en los territorios.",
         visionTitle: "Visión", visionBody: "Consolidarse como un espacio de referencia nacional para el análisis, el intercambio de ideas y la generación de soluciones vinculadas con la economía del visitante."

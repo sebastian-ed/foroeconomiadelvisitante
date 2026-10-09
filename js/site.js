@@ -14,6 +14,15 @@
   const esc = (v='') => String(v).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const attr = esc;
 
+  function migrateLegacyPalette(data) {
+    if (!data?.theme) return data;
+    const bg = String(data.theme.background || '').toLowerCase();
+    if (['#05080c', '#050505', '#05090d'].includes(bg)) {
+      const colors = ['background','paper','ink','text','muted','line','navy','navyDeep','cyan','cyanSoft','warm'];
+      colors.forEach(key => { data.theme[key] = defaults.theme[key]; });
+    }
+    return data;
+  }
   function mergeDeep(target, source) {
     if (!source || typeof source !== 'object') return target;
     Object.entries(source).forEach(([k,v]) => {
@@ -163,9 +172,9 @@
       let id='';try{const u=new URL(src,location.href);id=u.hostname.includes('youtu.be')?u.pathname.slice(1):u.searchParams.get('v')||u.pathname.split('/').at(-1)}catch(e){return ''}
       if(!/^[A-Za-z0-9_-]{11}$/.test(id))return '';
       const start=Math.max(0,Number(m.startAt)||0),end=Math.max(0,Number(m.endAt)||0);
-      const qs=new URLSearchParams({autoplay:m.autoplay?'1':'0',mute:m.mute?'1':'0',controls:m.controls&&!m.cleanEmbed?'1':'0',playsinline:'1',rel:'0',loop:m.loop?'1':'0',playlist:id,start:String(start)});
+      const qs=new URLSearchParams({autoplay:m.autoplay?'1':'0',mute:m.mute?'1':'0',controls:m.controls&&!m.cleanEmbed?'1':'0',playsinline:'1',rel:'0',modestbranding:'1',iv_load_policy:'3',fs:'0',disablekb:'1',loop:m.loop?'1':'0',playlist:id,start:String(start)});
       if(end>start)qs.set('end',String(end));if(m.captions)qs.set('cc_load_policy','1');
-      return `<iframe class="${cls} media-video" src="https://www.youtube-nocookie.com/embed/${id}?${qs}" title="Video del Foro" loading="lazy" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen style="border:0;${m.cleanEmbed?'pointer-events:none;':''}"></iframe>`;
+      return `<iframe class="${cls} media-video" src="https://www.youtube-nocookie.com/embed/${id}?${qs}" title="Video del Foro" referrerpolicy="strict-origin-when-cross-origin" loading="lazy" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen style="border:0;${m.cleanEmbed?'pointer-events:none;':''}"></iframe>`;
     }
     if(type==='video')return `<video class="${cls} media-video" src="${attr(src)}" ${m.poster?`poster="${attr(m.poster)}"`:''} ${m.autoplay?'autoplay':''} ${m.mute?'muted':''} ${m.loop?'loop':''} ${m.controls?'controls':''} playsinline preload="metadata" style="${pos}" data-start="${Math.max(0,Number(m.startAt)||0)}" data-end="${Math.max(0,Number(m.endAt)||0)}"></video>`;
     return `<img class="${cls}" src="${attr(src)}" alt="Imagen del Foro" loading="lazy" style="${pos}">`;
@@ -242,7 +251,7 @@
     const d=state.pages?.['el-foro']||defaults.pages['el-foro'];
     applySeo({title:`El Foro — ${state.site.shortName}`,description:d.hero.body});
     $('#main').innerHTML = `${renderInternalHero(d.hero,'pages.el-foro.hero')}
-      <section class="section" id="quienes-somos"><div class="shell editorial-split"><div><span class="eyebrow">QUIÉNES SOMOS</span>${editable('h2',d.intro.title,'pages.el-foro.intro.title')}</div>${editable('p',d.intro.body,'pages.el-foro.intro.body','big-body')}</div></section>
+      <section class="section" id="quienes-somos"><div class="shell editorial-split"><div><span class="eyebrow">QUIÉNES SOMOS</span>${editable('h2',d.intro.title,'pages.el-foro.intro.title')}</div>${editable('div',d.intro.body,'pages.el-foro.intro.body','big-body about-copy')}</div></section>
       <section class="section mission-section" id="mision"><div class="shell"><div class="mission-grid"><div><span>01</span>${editable('h3',d.mission.missionTitle,'pages.el-foro.mission.missionTitle')}${editable('p',d.mission.missionBody,'pages.el-foro.mission.missionBody')}</div><div><span>02</span>${editable('h3',d.mission.visionTitle,'pages.el-foro.mission.visionTitle')}${editable('p',d.mission.visionBody,'pages.el-foro.mission.visionBody')}</div></div><div class="objectives"><div><span class="eyebrow">OBJETIVOS</span><h2>Qué busca impulsar el Foro</h2></div><ol>${(d.objectives||[]).map((x,i)=>`<li><span>${String(i+1).padStart(2,'0')}</span>${editable('p',x,`pages.el-foro.objectives.${i}`)}</li>`).join('')}</ol></div></div></section>
       <section class="section method-section" id="metodologia"><div class="shell editorial-split"><div><span class="eyebrow">METODOLOGÍA</span>${editable('h2',d.methodology.title,'pages.el-foro.methodology.title')}</div>${editable('p',d.methodology.body,'pages.el-foro.methodology.body','big-body')}</div></section>
       <section class="section commission-section" id="comision"><div class="shell commission-card"><div><span class="eyebrow">GOBERNANZA</span>${editable('h2',d.commission.title,'pages.el-foro.commission.title')}</div>${editable('p',d.commission.body,'pages.el-foro.commission.body')}<a class="btn outline" href="participa.html">Contactar al Foro</a></div></section>`;
@@ -404,7 +413,7 @@
     try {
       if (db.configured && !previewMode) {
         const [remote,remotePosts,remoteEvents] = await Promise.all([db.loadSiteContent(),db.listPosts({limit:250}),db.listEvents({limit:250})]);
-        if (remote) state=mergeDeep(structuredClone(defaults),remote);
+        if (remote) state=migrateLegacyPalette(mergeDeep(structuredClone(defaults),remote));
         if (Array.isArray(remotePosts)) posts=remotePosts;
         if (Array.isArray(remoteEvents)) events=remoteEvents;
       }
