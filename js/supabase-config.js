@@ -5,4 +5,3 @@ window.FORO_SUPABASE = {
   url: "https://dqpchhjsiwviqoocqonn.supabase.co",
   anonKey: "sb_publishable_qYtrXpwkVN2AJnvc6Go6zA_HumzynC0"
 };
-

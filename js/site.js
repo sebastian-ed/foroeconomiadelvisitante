@@ -80,6 +80,23 @@
     return String(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
   }
 
+
+  // Registro controlado de familias Google Fonts y archivos alojados en Supabase.
+  const GOOGLE_FONT_FAMILIES = ["Instrument Serif", "DM Sans", "Inter", "Manrope", "Montserrat", "Poppins", "Lato", "Roboto", "Open Sans", "Source Sans 3", "Work Sans", "Nunito Sans", "Raleway", "Outfit", "Plus Jakarta Sans", "Public Sans", "IBM Plex Sans", "Libre Franklin", "Archivo", "Urbanist", "Mulish", "Playfair Display", "Cormorant Garamond", "Libre Baskerville", "Merriweather", "Lora", "EB Garamond", "Source Serif 4", "Spectral", "Crimson Text", "Newsreader", "Bodoni Moda", "DM Serif Display", "Fraunces", "Prata", "Alegreya", "Noto Serif", "IBM Plex Serif"];
+  function installFonts(theme) {
+    const custom = Array.isArray(theme.customFonts) ? theme.customFonts : [];
+    let style=document.getElementById('foro-dynamic-fonts');
+    if(!style){style=document.createElement('style');style.id='foro-dynamic-fonts';document.head.appendChild(style)}
+    const safeName=v=>String(v||'').replace(/[^\w\s-]/g,'').slice(0,70);
+    const safeUrl=v=>/^https:\/\//i.test(v||'') ? v : '';
+    style.textContent=custom.filter(f=>safeUrl(f.url)).map(f=>`@font-face{font-family:"${safeName(f.name)}";src:url("${safeUrl(f.url).replace(/"/g,'%22')}") format("${f.format||'woff2'}");font-display:swap;font-style:normal;font-weight:100 900}`).join('\n');
+    const keys=['bodyFont','headingFont','subtitleFont','navigationFont','buttonFont','eyebrowFont','articleFont'];
+    const requested=[...new Set(keys.map(k=>theme[k]).filter(f=>GOOGLE_FONT_FAMILIES.includes(f)))];
+    const linkId='foro-google-fonts';let link=document.getElementById(linkId);
+    if(!link){link=document.createElement('link');link.id=linkId;link.rel='stylesheet';document.head.appendChild(link)}
+    link.href=requested.length?'https://fonts.googleapis.com/css2?'+requested.map(f=>'family='+encodeURIComponent(f).replace(/%20/g,'+')+':wght@400;500;600;700').join('&')+'&display=swap':'';
+  }
+
   function applyTheme() {
     const t = state.theme || defaults.theme;
     const root = document.documentElement.style;
@@ -89,6 +106,13 @@
       const unit = ['maxWidth','radius','sectionSpace'].includes(k) ? 'px' : '';
       root.setProperty(map[k], `${v}${unit}`);
     });
+    installFonts(t);
+    const fontStack=(name,fallback)=>`"${String(name||fallback).replace(/["\\]/g,'')}",${fallback.includes('Serif')||fallback==='Georgia'?'Georgia,serif':'Arial,sans-serif'}`;
+    root.setProperty('--font-subtitle',fontStack(t.subtitleFont || t.bodyFont,'Arial'));
+    root.setProperty('--font-nav',fontStack(t.navigationFont || t.bodyFont,'Arial'));
+    root.setProperty('--font-button',fontStack(t.buttonFont || t.bodyFont,'Arial'));
+    root.setProperty('--font-eyebrow',fontStack(t.eyebrowFont || t.bodyFont,'Arial'));
+    root.setProperty('--font-article',fontStack(t.articleFont || t.headingFont,'Georgia'));
     root.setProperty('--font-body', `'${t.bodyFont || 'Manrope'}', system-ui, sans-serif`);
     root.setProperty('--font-heading', `'${t.headingFont || 'Source Serif 4'}', Georgia, serif`);
   }
@@ -174,7 +198,7 @@
       const start=Math.max(0,Number(m.startAt)||0),end=Math.max(0,Number(m.endAt)||0);
       const qs=new URLSearchParams({autoplay:m.autoplay?'1':'0',mute:m.mute?'1':'0',controls:m.controls&&!m.cleanEmbed?'1':'0',playsinline:'1',rel:'0',modestbranding:'1',iv_load_policy:'3',fs:'0',disablekb:'1',loop:m.loop?'1':'0',playlist:id,start:String(start)});
       if(end>start)qs.set('end',String(end));if(m.captions)qs.set('cc_load_policy','1');
-      return `<iframe class="${cls} media-video" src="https://www.youtube-nocookie.com/embed/${id}?${qs}" title="Video del Foro" referrerpolicy="strict-origin-when-cross-origin" loading="lazy" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen style="border:0;${m.cleanEmbed?'pointer-events:none;':''}"></iframe>`;
+      return `<iframe class="${cls} media-video ${m.cleanEmbed?'youtube-cropped':''}" src="https://www.youtube-nocookie.com/embed/${id}?${qs}" title="Video del Foro" referrerpolicy="strict-origin-when-cross-origin" loading="lazy" allow="autoplay; encrypted-media; picture-in-picture" style="border:0;${m.cleanEmbed?'pointer-events:none;':''}"></iframe>`;
     }
     if(type==='video')return `<video class="${cls} media-video" src="${attr(src)}" ${m.poster?`poster="${attr(m.poster)}"`:''} ${m.autoplay?'autoplay':''} ${m.mute?'muted':''} ${m.loop?'loop':''} ${m.controls?'controls':''} playsinline preload="metadata" style="${pos}" data-start="${Math.max(0,Number(m.startAt)||0)}" data-end="${Math.max(0,Number(m.endAt)||0)}"></video>`;
     return `<img class="${cls}" src="${attr(src)}" alt="Imagen del Foro" loading="lazy" style="${pos}">`;

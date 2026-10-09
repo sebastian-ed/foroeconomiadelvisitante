@@ -323,7 +323,7 @@ create policy "Users update own profile" on public.cms_profiles for update to au
 
 -- ---------- Storage ----------
 insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types)
-values('foro-media','foro-media',true,52428800,array['image/jpeg','image/png','image/webp','image/gif','video/mp4','video/webm','application/pdf'])
+values('foro-media','foro-media',true,52428800,array['image/jpeg','image/png','image/webp','image/gif','video/mp4','video/webm','application/pdf','font/woff2','font/woff','font/ttf','font/otf','application/font-woff','application/x-font-woff','application/x-font-ttf','application/x-font-opentype','application/octet-stream'])
 on conflict(id) do update set public=true,file_size_limit=excluded.file_size_limit,allowed_mime_types=excluded.allowed_mime_types;
 
 drop policy if exists "Public read foro media" on storage.objects;

@@ -5,7 +5,7 @@
 
 insert into public.cms_profiles(user_id,display_name,role)
 select id,coalesce(raw_user_meta_data->>'full_name',email),'admin'
-from auth.users where lower(email)=lower('seba020694@gmail.com')
+from auth.users where lower(email)=lower('ADMIN_EMAIL_AQUI')
 on conflict(user_id) do update set role='admin';
 
 create or replace function public.foro_role() returns text language sql stable security definer set search_path = public as $$

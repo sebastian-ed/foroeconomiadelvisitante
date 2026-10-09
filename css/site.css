@@ -145,3 +145,17 @@ h1,h2,h3,h4{color:var(--ink)}
 
 /* V7: conservación de saltos del texto institucional */
 .about-copy {white-space:pre-line;}
+
+/* V7.1 — YouTube decorativo, recorte de bordes inspirado en Chubut Web.
+   YouTube no ofrece API para suprimir los titulos: se oculta la zona de UI mediante
+   crop en un contenedor overflow:hidden. No cubrir iframes interactivos. */
+.cms-hero-media,.cms-section-media{overflow:hidden!important;isolation:isolate}
+.cms-hero-media iframe.youtube-cropped,.cms-section-media iframe.youtube-cropped{position:absolute!important;top:-15%!important;left:-40%!important;width:180%!important;height:130%!important;max-width:none!important;max-height:none!important;transform:none!important;pointer-events:none!important;border:0!important}
+@media(max-width:760px){.cms-hero-media iframe.youtube-cropped,.cms-section-media iframe.youtube-cropped{left:-75%!important;width:250%!important;top:-20%!important;height:140%!important}}
+
+/* Tipografía configurable por jerarquía */
+.site-header,.desktop-nav,.mobile-nav,.nav-dropdown{font-family:var(--font-nav,var(--font-body))}
+.eyebrow,.hero-kicker,.article-kicker,.section-kicker,.post-meta{font-family:var(--font-eyebrow,var(--font-body))}
+.btn,button,.read-link{font-family:var(--font-button,var(--font-body))}
+.lead,.hero-body,.hero-summary p,.section-head>p,.section-subtitle{font-family:var(--font-subtitle,var(--font-body))}
+.article-body{font-family:var(--font-article,var(--font-heading))}

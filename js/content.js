@@ -32,6 +32,12 @@ window.FORO_DEFAULT_CONTENT = {
     warm: "#e8edf0",
     bodyFont: "DM Sans",
     headingFont: "Instrument Serif",
+    subtitleFont: "DM Sans",
+    navigationFont: "DM Sans",
+    buttonFont: "DM Sans",
+    eyebrowFont: "DM Sans",
+    articleFont: "Instrument Serif",
+    customFonts: [],
     maxWidth: 1380,
     radius: 0,
     sectionSpace: 124
