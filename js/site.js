@@ -45,7 +45,21 @@
 
   function editable(tag, text, path, className='') {
     const edit = path ? ` data-cms-path="${attr(path)}"${inlineMode ? ' contenteditable="true" spellcheck="true"' : ''}` : '';
-    return `<${tag}${className?` class="${className}"`:''}${edit}>${esc(text||'')}</${tag}>`;
+    const rich=state.site?.inlineRich?.[path]; const isRich=tag==='div' || tag==='p'; const content=isRich&&typeof rich==='string'?sanitizeInlineRich(rich):esc(text||'').replace(/\n/g,'<br>'); return `<${tag}${className?` class="${className}"`:''}${edit}>${content}</${tag}>`;
+  }
+
+  // Sanitization of inline editorial formatting: no scripts, arbitrary classes or event handlers.
+  function sanitizeInlineRich(html='') {
+    const root=document.createElement('template');root.innerHTML=String(html);
+    const allowed=new Set(['BR','B','STRONG','EM','I','U','P','DIV','SPAN']);
+    const clean=(node)=>{for(const child of [...node.childNodes]){
+      if(child.nodeType===8){child.remove();continue}
+      if(child.nodeType!==1){if(child.nodeType!==3)child.remove();continue}
+      clean(child);
+      if(!allowed.has(child.tagName)){child.replaceWith(...child.childNodes);continue}
+      [...child.attributes].forEach(attr=>child.removeAttribute(attr.name));
+    }};
+    clean(root.content);return root.innerHTML;
   }
 
   function sanitizeRichHtml(html='') {
@@ -420,28 +434,38 @@
     document.body.classList.add('cms-inline-mode');
     const inlineStyles=state.site?.inlineStyles||{};
     $$('[data-cms-path]').forEach(el=>{const st=inlineStyles[el.dataset.cmsPath]||{};['fontFamily','fontSize','lineHeight','textAlign','fontWeight','fontStyle'].forEach(k=>{if(st[k])el.style[k]=st[k]})});
-    const toolbar=document.createElement('div');toolbar.className='cms-inline-toolbar';toolbar.innerHTML=`<span>Editar texto</span><select aria-label="Tipografía" data-inline-font><option value="">Fuente institucional</option>${['Instrument Serif','DM Sans','Inter','Playfair Display','Lora','Newsreader','Montserrat','Libre Baskerville','Georgia'].map(f=>`<option>${f}</option>`).join('')}</select><select aria-label="Tamaño" data-inline-size><option value="">Tamaño</option>${[14,16,18,22,26,32,40,48,64,80,100].map(n=>`<option value="${n}px">${n}px</option>`).join('')}</select><select aria-label="Interlineado" data-inline-line>${['1','1.2','1.4','1.6','1.8','2'].map(n=>`<option value="${n}">${n} línea</option>`).join('')}</select><button type="button" data-inline="left" title="Izquierda">⇤</button><button type="button" data-inline="center" title="Centro">≡</button><button type="button" data-inline="right" title="Derecha">⇥</button><button type="button" data-inline="bold" title="Negrita"><b>B</b></button><button type="button" data-inline="italic" title="Cursiva"><i>I</i></button><button type="button" data-inline="add" title="Agregar bloques">＋ Bloques</button>`;
+    const toolbar=document.createElement('div');toolbar.className='cms-inline-toolbar';toolbar.innerHTML=`<span>Editar texto</span><select aria-label="Tipografía" data-inline-font><option value="">Fuente institucional</option>${['Instrument Serif','DM Sans','Inter','Playfair Display','Lora','Newsreader','Montserrat','Libre Baskerville','Georgia'].map(f=>`<option>${f}</option>`).join('')}</select><select aria-label="Tamaño" data-inline-size><option value="">Tamaño</option>${[14,16,18,22,26,32,40,48,64,80,100].map(n=>`<option value="${n}px">${n}px</option>`).join('')}</select><select aria-label="Interlineado" data-inline-line>${['1','1.2','1.4','1.6','1.8','2'].map(n=>`<option value="${n}">${n} línea</option>`).join('')}</select><button type="button" data-inline="left" title="Izquierda">⇤</button><button type="button" data-inline="center" title="Centro">≡</button><button type="button" data-inline="right" title="Derecha">⇥</button><button type="button" data-inline="bold" title="Negrita"><b>B</b></button><button type="button" data-inline="italic" title="Cursiva"><i>I</i></button><button type="button" data-inline="underline" title="Subrayado"><u>U</u></button><button type="button" data-inline="add" title="Agregar bloques">＋ Bloques</button>`;
     document.body.appendChild(toolbar);
     let selected=null;
     let selectedSection=null;
     function selectSection(sec){if(selectedSection)selectedSection.classList.remove('cms-section-selected');selectedSection=sec;sec?.classList.add('cms-section-selected');if(sec){const index=Number(sec.dataset.sectionIndex);if(Number.isInteger(index))parent.postMessage({type:'foro:section-select',index},'*')}}
     function changeInline(key,value){if(!selected)return;selected.style[key]=value;const path=selected.dataset.cmsPath;state.site.inlineStyles??={};state.site.inlineStyles[path]??={};state.site.inlineStyles[path][key]=value;parent.postMessage({type:'foro:inline-style',path,key,value},'*')}
     $$('select',toolbar).forEach(sel=>sel.onchange=()=>{if(sel.dataset.inlineFont!==undefined)changeInline('fontFamily',sel.value);else if(sel.dataset.inlineSize!==undefined)changeInline('fontSize',sel.value);else changeInline('lineHeight',sel.value)});
-    $$('[data-inline]',toolbar).forEach(btn=>btn.onclick=()=>{const op=btn.dataset.inline;if(op==='add'){const section=selected?.closest('[data-section-index]');if(section)parent.postMessage({type:'foro:edit-section',index:Number(section.dataset.sectionIndex)},'*');else parent.postMessage({type:'foro:open-pages'},'*');return}if(['left','center','right'].includes(op))changeInline('textAlign',op);if(op==='bold')changeInline('fontWeight',selected.style.fontWeight==='bold'?'normal':'bold');if(op==='italic')changeInline('fontStyle',selected.style.fontStyle==='italic'?'normal':'italic')});
+    // Preserve the browser selection when using a formatting control.
+    toolbar.addEventListener('mousedown',e=>{if(e.target.closest('button[data-inline]'))e.preventDefault()});
+    const sendRich=(el)=>{if(!el || !['DIV','P'].includes(el.tagName))return;const html=sanitizeInlineRich(el.innerHTML);state.site.inlineRich??={};state.site.inlineRich[el.dataset.cmsPath]=html;parent.postMessage({type:'foro:inline-rich',path:el.dataset.cmsPath,html},'*')};
+    $$('[data-inline]',toolbar).forEach(btn=>btn.onclick=()=>{const op=btn.dataset.inline;if(op==='add'){const section=selected?.closest('[data-section-index]');if(section)parent.postMessage({type:'foro:edit-section',index:Number(section.dataset.sectionIndex)},'*');else parent.postMessage({type:'foro:open-pages'},'*');return}if(['left','center','right'].includes(op))changeInline('textAlign',op);if(['bold','italic','underline'].includes(op)){
+       if(!selected)return;
+       const sel=window.getSelection();
+       const range=sel?.rangeCount?sel.getRangeAt(0):null;
+       if(range && !sel.isCollapsed && selected.contains(range.commonAncestorContainer)){
+          selected.focus();document.execCommand(op,false,null);sendRich(selected);
+       }else if(op!=='underline')changeInline(op==='bold'?'fontWeight':'fontStyle',op==='bold'?(selected.style.fontWeight==='bold'?'normal':'bold'):(selected.style.fontStyle==='italic'?'normal':'italic'));
+     }});
     $$('[data-cms-path]').forEach(el => {
-      el.addEventListener('click',()=>{selected=el;selectSection(el.closest('[data-section-index]'));toolbar.classList.add('is-visible');toolbar.querySelector('[data-inline-line]').value=el.style.lineHeight||'1.6'});
+      el.addEventListener('click',()=>{selected=el;selectSection(el.closest('[data-section-index]') || el.closest('#main section[id]') || el.closest('#main .internal-hero')); toolbar.classList.add('is-visible');toolbar.querySelector('[data-inline-line]').value=el.style.lineHeight||'1.6'});
 
       el.addEventListener('focus',()=>el.classList.add('cms-editing'));
       el.addEventListener('blur',()=>{
         el.classList.remove('cms-editing');
         const value=el.innerText.replace(/\r/g,'').replace(/\n$/,'');
         setPath(state,el.dataset.cmsPath,value);
-        parent.postMessage({type:'foro:inline-change',path:el.dataset.cmsPath,value},'*');
+        parent.postMessage({type:'foro:inline-change',path:el.dataset.cmsPath,value},'*');sendRich(el);
       });
       el.addEventListener('input',()=>{
         const value=el.innerText.replace(/\r/g,'').replace(/\n$/,'');
         setPath(state,el.dataset.cmsPath,value);
-        parent.postMessage({type:'foro:inline-change',path:el.dataset.cmsPath,value},'*');
+        parent.postMessage({type:'foro:inline-change',path:el.dataset.cmsPath,value},'*');sendRich(el);
       });
       el.addEventListener('keydown',e=>{
         if(e.key==='Enter'){
@@ -458,6 +482,7 @@
       sec.addEventListener('dblclick',e=>{if(e.target.closest('[data-cms-path]'))return;parent.postMessage({type:'foro:edit-section',index:Number(sec.dataset.sectionIndex)},'*')});
     });
     document.addEventListener('keydown',e=>{
+      if(e.key==='Escape' && selectedSection){document.activeElement?.blur?.();selected=null;selectSection(selectedSection);return}
       if(!selectedSection || !['Delete','Backspace'].includes(e.key))return;
       const el=document.activeElement;
       if(el?.isContentEditable || ['INPUT','TEXTAREA','SELECT'].includes(el?.tagName))return;
