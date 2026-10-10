@@ -51,7 +51,7 @@
   const eventTypes={conversation:'Conversatorio',workshop:'Taller',hackathon:'Hackatón',project:'Proyecto',meeting:'Encuentro'};
 
   function toast(msg){const el=$('#toast');el.textContent=msg;el.classList.add('show');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),2600)}
-  function markDirty(){dirty=true;$('#dirtyBadge').classList.remove('hidden');$('#saveState').textContent='Cambios locales';pushPreview()}
+  function markDirty(options={}){dirty=true;$('#dirtyBadge').classList.remove('hidden');$('#saveState').textContent='Cambios locales';if(!options.preserveVisualFocus)pushPreview()}
   function clearDirty(){dirty=false;$('#dirtyBadge').classList.add('hidden');$('#saveState').textContent='Publicado'}
 
   function switchView(view){
@@ -416,7 +416,7 @@
   async function inviteCollaborator(){const email=$('#inviteEmail').value.trim(),role=$('#inviteRole').value,name=$('#inviteName').value.trim();if(!email)return toast('Ingresá un email');const btn=$('#inviteSubmit');btn.disabled=true;try{const result=await manageCollaborator({action:'invite',email,role,display_name:name});toast('Invitación creada');if(result.invite_url){$('#inviteResult').textContent='Enlace de invitación para compartir de forma privada: '+result.invite_url} else $('#inviteResult').textContent='La invitación se envió por correo.';loadCollaborators()}catch(e){toast(e.message)}finally{btn.disabled=false}}
   function renderAll(){renderDashboard();renderSections();renderPages();renderDesign();renderNavigation();renderSettings();renderPosts();renderEvents();renderMedia();renderInquiries();renderNewsletter();renderHistory();renderAdvanced()}
 
-  async function publishSite(){if(!db.configured){toast('Supabase no está configurado');return}try{$('#publishSite').disabled=true;$('#saveState').textContent='Publicando…';await db.saveSiteContent(state,'Publicación desde CMS');clearDirty();toast('Sitio publicado');refreshPreview();loadHistory()}catch(e){toast('Error: '+e.message);$('#saveState').textContent='Error'}finally{$('#publishSite').disabled=false}}
+  async function publishSite(){if(!db.configured){toast('Supabase no está configurado');return}try{$('#publishSite').disabled=true;$('#saveState').textContent='Publicando…';await db.saveSiteContent(state,'Publicación desde CMS');clearDirty();toast('Sitio publicado');pushPreview();loadHistory()}catch(e){toast('Error: '+e.message);$('#saveState').textContent='Error'}finally{$('#publishSite').disabled=false}}
 
   // V12 structured page builder: every item is independent and editable.
   let activeBuilderSection=0;
@@ -491,7 +491,16 @@
   $('#visualPage').onchange=()=>{const lookup={'../index.html':'home','../el-foro.html':'el-foro','../participa.html':'participa','../conocimiento.html':'conocimiento','../actividades.html':'actividades','../voces.html':'voces','../newsletter.html':'newsletter'};builderPage=lookup[$('#visualPage').value]||'home';selectedBuilderBlock=-1;renderBuilder();reloadVisual()};$('#visualReload').onclick=reloadVisual;$$('[data-device]').forEach(b=>b.onclick=()=>{visualDevice=b.dataset.device;$$('[data-device]').forEach(x=>x.classList.toggle('active',x===b));resizeVisual()});$('#visualFrame').onload=()=>{resizeVisual();setTimeout(pushPreview,120)};
   $('#previewReload').onclick=refreshPreview;$('#previewFrame').onload=()=>setTimeout(pushPreview,100);
   if('ResizeObserver'in window)new ResizeObserver(resizeVisual).observe($('#visualStage'));else addEventListener('resize',resizeVisual);
-  addEventListener('message',e=>{const m=e.data||{};if(m.type==='foro:inline-change'&&typeof m.path==='string'&&m.path.length<180){setPath(state,m.path,m.value);markDirty()}if(m.type==='foro:inline-style'&&['fontFamily','fontSize','lineHeight','textAlign','fontWeight','fontStyle'].includes(m.key)&&typeof m.path==='string'&&typeof m.value==='string'){state.site.inlineStyles??={};state.site.inlineStyles[m.path]??={};state.site.inlineStyles[m.path][m.key]=m.value;markDirty()}if(m.type==='foro:open-pages')setView('pages');if(m.type==='foro:edit-section'&&Number.isInteger(m.index)){activeBuilderSection=m.index;builderPage='home';renderBuilder();openSectionEditor(m.index)}if(m.type==='foro:preview-ready')pushPreview()});
+  addEventListener('message',e=>{const m=e.data||{};if(m.type==='foro:inline-change'&&typeof m.path==='string'&&m.path.length<180){setPath(state,m.path,m.value);markDirty({preserveVisualFocus:true})}if(m.type==='foro:inline-style'&&['fontFamily','fontSize','lineHeight','textAlign','fontWeight','fontStyle'].includes(m.key)&&typeof m.path==='string'&&typeof m.value==='string'){state.site.inlineStyles??={};state.site.inlineStyles[m.path]??={};state.site.inlineStyles[m.path][m.key]=m.value;markDirty({preserveVisualFocus:true})}if(m.type==='foro:section-select'&&Number.isInteger(m.index)){activeBuilderSection=m.index;selectedBuilderBlock=-1;renderBuilder();}
+    if(m.type==='foro:section-delete'&&Number.isInteger(m.index)){
+      if(builderPage==='home'){
+        const idx=m.index;if(idx>=0&&idx<state.sections.length&&confirm('¿Eliminar esta sección completa? Podés recuperar una versión anterior desde Revisiones.')){state.sections.splice(idx,1);activeBuilderSection=Math.max(0,Math.min(idx,state.sections.length-1));markDirty();renderBuilder();renderSections()}
+      }else if(builderPage==='el-foro'){
+        const ids=['hero','quienes-somos','mision','metodologia','comision'],id=m.sectionId;
+        if(ids.includes(id)&&confirm('¿Ocultar esta sección del sitio? El contenido se conserva y podés mostrarlo nuevamente desde el panel.')){const d=state.pages['el-foro'];d.hiddenSections??=[];if(!d.hiddenSections.includes(id))d.hiddenSections.push(id);markDirty();renderBuilder();renderPages()}
+      }
+    }
+    if(m.type==='foro:open-pages')setView('pages');if(m.type==='foro:edit-section'&&Number.isInteger(m.index)){activeBuilderSection=m.index;builderPage='home';renderBuilder();openSectionEditor(m.index)}if(m.type==='foro:preview-ready')pushPreview()});
   addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue=''}});
   boot();
 })();

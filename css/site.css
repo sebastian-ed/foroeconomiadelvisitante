@@ -225,3 +225,7 @@ html body .article-body h2,html body .article-body h3,html body .article-body h4
 .cms-structured-blocks figure img,.cms-structured-blocks figure video{display:block;width:100%;max-height:680px;object-fit:contain}
 .cms-structured-blocks iframe{display:block;width:100%;aspect-ratio:16/9;border:0}
 .cms-structured-blocks figcaption{font:13px/1.5 var(--font-body);opacity:.75;margin-top:8px}
+
+/* V14 - interactive section selection in visual editor */
+.cms-inline-mode [data-section-index].cms-section-selected{outline:3px solid #0695bd!important;outline-offset:-3px;box-shadow:inset 0 0 0 9999px rgba(16,165,207,.055)}
+.cms-inline-mode [data-section-index].cms-section-selected::before{content:'SECCIÓN SELECCIONADA · Supr/Backspace para eliminar';position:absolute;left:12px;top:9px;background:#063e76;color:white;font:700 11px/1.3 Arial,sans-serif;padding:8px 12px;z-index:35;pointer-events:none}

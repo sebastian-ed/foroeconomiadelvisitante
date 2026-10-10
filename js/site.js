@@ -423,11 +423,13 @@
     const toolbar=document.createElement('div');toolbar.className='cms-inline-toolbar';toolbar.innerHTML=`<span>Editar texto</span><select aria-label="Tipografía" data-inline-font><option value="">Fuente institucional</option>${['Instrument Serif','DM Sans','Inter','Playfair Display','Lora','Newsreader','Montserrat','Libre Baskerville','Georgia'].map(f=>`<option>${f}</option>`).join('')}</select><select aria-label="Tamaño" data-inline-size><option value="">Tamaño</option>${[14,16,18,22,26,32,40,48,64,80,100].map(n=>`<option value="${n}px">${n}px</option>`).join('')}</select><select aria-label="Interlineado" data-inline-line>${['1','1.2','1.4','1.6','1.8','2'].map(n=>`<option value="${n}">${n} línea</option>`).join('')}</select><button type="button" data-inline="left" title="Izquierda">⇤</button><button type="button" data-inline="center" title="Centro">≡</button><button type="button" data-inline="right" title="Derecha">⇥</button><button type="button" data-inline="bold" title="Negrita"><b>B</b></button><button type="button" data-inline="italic" title="Cursiva"><i>I</i></button><button type="button" data-inline="add" title="Agregar bloques">＋ Bloques</button>`;
     document.body.appendChild(toolbar);
     let selected=null;
+    let selectedSection=null;
+    function selectSection(sec){if(selectedSection)selectedSection.classList.remove('cms-section-selected');selectedSection=sec;sec?.classList.add('cms-section-selected');if(sec){const index=Number(sec.dataset.sectionIndex);if(Number.isInteger(index))parent.postMessage({type:'foro:section-select',index},'*')}}
     function changeInline(key,value){if(!selected)return;selected.style[key]=value;const path=selected.dataset.cmsPath;state.site.inlineStyles??={};state.site.inlineStyles[path]??={};state.site.inlineStyles[path][key]=value;parent.postMessage({type:'foro:inline-style',path,key,value},'*')}
     $$('select',toolbar).forEach(sel=>sel.onchange=()=>{if(sel.dataset.inlineFont!==undefined)changeInline('fontFamily',sel.value);else if(sel.dataset.inlineSize!==undefined)changeInline('fontSize',sel.value);else changeInline('lineHeight',sel.value)});
     $$('[data-inline]',toolbar).forEach(btn=>btn.onclick=()=>{const op=btn.dataset.inline;if(op==='add'){const section=selected?.closest('[data-section-index]');if(section)parent.postMessage({type:'foro:edit-section',index:Number(section.dataset.sectionIndex)},'*');else parent.postMessage({type:'foro:open-pages'},'*');return}if(['left','center','right'].includes(op))changeInline('textAlign',op);if(op==='bold')changeInline('fontWeight',selected.style.fontWeight==='bold'?'normal':'bold');if(op==='italic')changeInline('fontStyle',selected.style.fontStyle==='italic'?'normal':'italic')});
     $$('[data-cms-path]').forEach(el => {
-      el.addEventListener('click',()=>{selected=el;toolbar.classList.add('is-visible');toolbar.querySelector('[data-inline-line]').value=el.style.lineHeight||'1.6'});
+      el.addEventListener('click',()=>{selected=el;selectSection(el.closest('[data-section-index]'));toolbar.classList.add('is-visible');toolbar.querySelector('[data-inline-line]').value=el.style.lineHeight||'1.6'});
 
       el.addEventListener('focus',()=>el.classList.add('cms-editing'));
       el.addEventListener('blur',()=>{
@@ -450,9 +452,20 @@
         }
       });
     });
-    $$('[data-section-index]').forEach(sec=>{
+    $$(page==='el-foro'?'#main section[id]':'[data-section-index]').forEach(sec=>{
       const b=document.createElement('button');b.type='button';b.className='cms-section-edit-button';b.textContent='✎ Editar sección / medios';b.onclick=e=>{e.preventDefault();e.stopPropagation();parent.postMessage({type:'foro:edit-section',index:Number(sec.dataset.sectionIndex)},'*')};sec.appendChild(b);
+      sec.addEventListener('click',e=>{if(e.target.closest('button,a,input,textarea,select,[data-cms-path]'))return;selected=null;selectSection(sec)});
       sec.addEventListener('dblclick',e=>{if(e.target.closest('[data-cms-path]'))return;parent.postMessage({type:'foro:edit-section',index:Number(sec.dataset.sectionIndex)},'*')});
+    });
+    document.addEventListener('keydown',e=>{
+      if(!selectedSection || !['Delete','Backspace'].includes(e.key))return;
+      const el=document.activeElement;
+      if(el?.isContentEditable || ['INPUT','TEXTAREA','SELECT'].includes(el?.tagName))return;
+      e.preventDefault();const index=Number(selectedSection.dataset.sectionIndex);
+      if(page==='home') parent.postMessage({type:'foro:section-delete',index},'*');
+      else if(page==='el-foro'){
+        const id=selectedSection.id;if(id)parent.postMessage({type:'foro:section-delete',index,sectionId:id},'*');
+      }
     });
   }
 
@@ -506,7 +519,17 @@
 
   addEventListener('message', e => {
     const m=e.data||{};
-    if (m.type==='foro:cms-preview' && m.payload) { state=mergeDeep(structuredClone(defaults),m.payload); renderCurrentPage(); }
+    if (m.type==='foro:cms-preview' && m.payload) {
+      state=mergeDeep(structuredClone(defaults),m.payload);
+      const focused=document.activeElement;
+      if(inlineMode && focused?.isContentEditable && focused.matches('[data-cms-path]')){
+        // Never replace a live contenteditable node during typing.
+        return;
+      }
+      const oldScroll=window.scrollY;
+      renderCurrentPage();
+      window.scrollTo(0,oldScroll);
+    }
     if (m.type==='foro:cms-preview-focus' && m.anchor) document.getElementById(m.anchor)?.scrollIntoView({behavior:'smooth',block:'center'});
   });
 
