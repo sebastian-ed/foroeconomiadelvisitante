@@ -92,3 +92,25 @@
 .builder-tools{display:flex;gap:6px;flex-wrap:wrap;padding:14px 0;border-bottom:1px solid #d6e1eb}.builder-tools button,.builder-inspector button{background:#eaf5fb;color:#063e76;border:1px solid #bdd6e6;border-radius:5px;padding:9px 12px;font-weight:650;cursor:pointer}.builder-tools button:hover{background:#d0edf9}
 .builder-workspace{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:16px;padding-top:14px}.builder-list{display:grid;align-content:start;gap:7px;max-height:340px;overflow:auto}.builder-item{display:flex;gap:12px;align-items:center;width:100%;text-align:left;border:1px solid #cddce8;border-radius:5px;background:#fff;color:#102f49;padding:11px;cursor:pointer}.builder-item.selected{border:2px solid #008cb9;background:#ebf7fc}.builder-item>span:nth-child(2){display:grid;gap:2px;flex:1;min-width:0}.builder-item small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#5a7387}.builder-handle{font-size:18px;color:#66859a}.builder-item-actions{display:flex;gap:7px}.builder-item-actions i{font-style:normal;font-size:17px;padding:3px;cursor:pointer}.builder-inspector{border-left:1px solid #d7e2ed;padding-left:16px;display:grid;gap:10px;align-content:start;max-height:360px;overflow-y:auto}.builder-inspector-title{font-weight:800;font-size:15px}.builder-inspector label{display:grid;gap:4px;font-size:12px;font-weight:700}.builder-inspector input,.builder-inspector textarea,.builder-inspector select{width:100%;border:1px solid #a8bfd2;background:#fff;color:#092e50;padding:10px;border-radius:5px;font:inherit}.builder-inspector textarea{resize:vertical;white-space:pre-wrap}.builder-empty{color:#526d82;padding:20px 6px}
 @media(max-width:900px){.builder-workspace{grid-template-columns:1fr}.builder-inspector{border-left:0;border-top:1px solid #d7e2ed;padding-left:0;padding-top:12px}.builder-bar{flex-wrap:wrap}}
+
+/* V13: panel lateral de secciones y lienzo completo */
+.visual-layout{display:grid;grid-template-columns:minmax(275px,315px) minmax(0,1fr);gap:14px;flex:1;min-height:0;align-items:stretch}
+.visual-sidepanel{min-height:0;overflow-y:auto;background:#fff;border:1px solid #d4e2ec;border-radius:9px;padding:14px}
+.visual-stage{min-height:0;height:100%;overflow:auto;scrollbar-gutter:stable}
+.visual-view.active{height:calc(100vh - var(--topbar) - 35px);min-height:570px}
+.visual-sidepanel .builder-bar{display:block}.visual-sidepanel .builder-bar select{width:100%;max-width:none;margin-top:12px}
+.visual-sidepanel .builder-tools{display:grid;grid-template-columns:1fr 1fr;gap:6px}.visual-sidepanel .builder-tools button{font-size:11px;padding:8px 5px}
+.visual-sidepanel .builder-workspace{display:block;padding-top:12px}.visual-sidepanel .builder-list{max-height:none;overflow:visible}
+.visual-sidepanel .builder-inspector{border-left:0;border-top:1px solid #d7e2ed;padding:14px 0 0;margin-top:16px;max-height:none;overflow:visible}
+.visual-sidepanel .builder-item{padding:8px 7px}.visual-sidepanel .builder-item-actions{gap:2px}.visual-sidepanel .builder-item-actions i{font-size:14px}
+.visual-sidepanel .section-tree{margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid #d8e5ee;display:grid;gap:5px}
+.visual-sidepanel .section-tree>strong{font-size:12px;color:#063e76;margin-bottom:5px}
+.visual-sidepanel .section-tree-row{display:flex;align-items:center;gap:5px;border:1px solid #d7e2eb;border-radius:5px;padding:6px;background:#fff}
+.visual-sidepanel .section-tree-row.active{border-color:#0089b6;background:#eaf6fb}
+.visual-sidepanel .section-tree-row .tree-name{border:0;background:none;color:#173b55;text-align:left;flex:1;min-width:0;font:600 11px DM Sans,sans-serif;cursor:pointer;white-space:normal}
+.visual-sidepanel .section-tree-row button:not(.tree-name){border:0;background:#eef4f8;color:#0a426d;padding:4px 5px;cursor:pointer;border-radius:3px}
+.visual-sidepanel .section-tree-row button:focus-visible{outline:2px solid #008db5}
+.visual-sidepanel .section-tree-row.muted{opacity:.56}
+.visual-sidepanel .section-tree-note{font-size:10px;color:#60798a;margin:6px 0 0}
+@media(max-width:980px){.visual-layout{grid-template-columns:250px minmax(0,1fr)}}
+@media(max-width:720px){.visual-layout{grid-template-columns:1fr;grid-template-rows:minmax(185px,35vh) minmax(500px,1fr);overflow:auto}.visual-view.active{height:auto;min-height:900px}.visual-sidepanel{overflow:auto}.visual-stage{min-height:500px}}
