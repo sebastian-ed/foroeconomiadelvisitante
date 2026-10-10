@@ -172,26 +172,60 @@
   }
 
   function renderHeader() {
-    const nav = state.navigation || [];
+    const configured = Array.isArray(state.navigation) ? state.navigation.filter(n=>n && n.href && n.label) : [];
+    // Preserve administrator-managed menus, but recover missing core routes on legacy sites.
+    const required = [
+      {label:'Inicio',href:'index.html'}, {label:'El Foro',href:'el-foro.html',children:[
+        {label:'Quiénes somos',href:'el-foro.html#quienes-somos'},
+        {label:'Misión y visión',href:'el-foro.html#mision-vision'},
+        {label:'Metodología',href:'el-foro.html#metodologia'},
+        {label:'Comisión promotora',href:'el-foro.html#comision-promotora'}]},
+      {label:'Conocimiento',href:'conocimiento.html'},
+      {label:'Actividades',href:'actividades.html'},
+      {label:'Voces',href:'voces.html',children:[{label:'Entrevistas',href:'voces.html#entrevistas'},{label:'Experiencias',href:'voces.html#experiencias'}]},
+      {label:'Participá',href:'participa.html',featured:true}
+    ];
+    const route = href => String(href||'').split(/[?#]/)[0].replace(/^\.\//,'');
+    const nav = [...configured];
+    required.forEach(item => {
+      const existing=nav.find(n=>route(n.href)===route(item.href));
+      if (!existing) nav.push(item);
+      else if ((!Array.isArray(existing.children)||!existing.children.length) && item.children) existing.children=item.children;
+    });
     const current = page;
-    const navHtml = nav.map((n,i) => {
-      const key = n.href?.split('.')[0] || '';
+    const navHtml = nav.map(n => {
+      const key = String(n.href).split('.')[0];
       const active = (current==='home' && key==='index') || current===key || (current==='post' && key==='conocimiento') || (current==='event' && key==='actividades');
-      const children = (n.children||[]).length ? `<div class="nav-dropdown" role="group" aria-label="Subsecciones">${n.children.map(c=>`<a href="${attr(c.href)}">${esc(c.label)}</a>`).join('')}</div>` : '';
+      const children = (n.children||[]).length ? `<div class="nav-dropdown" role="group" aria-label="Subsecciones de ${attr(n.label)}">${n.children.map(c=>`<a href="${attr(c.href)}">${esc(c.label)}</a>`).join('')}</div>` : '';
       return `<div class="nav-item ${active?'is-active':''} ${n.featured?'is-featured':''}"><a href="${attr(n.href)}">${esc(n.label)}${children?' <span class="chev">⌄</span>':''}</a>${children}</div>`;
     }).join('');
     $('#siteHeader').innerHTML = `
       <div class="header-inner shell">
         <a class="brand" href="index.html" aria-label="${attr(state.site?.name)}"><img src="${attr(state.site?.logo)}" alt="${attr(state.site?.name)}"></a>
         <nav class="desktop-nav" aria-label="Navegación principal">${navHtml}</nav>
-        <div class="header-tools"><a class="search-link" href="buscar.html" aria-label="Buscar">⌕</a><button class="menu-toggle" id="menuToggle" aria-label="Abrir menú" aria-expanded="false"><span></span><span></span></button></div>
-      </div>
-      <div class="mobile-nav" id="mobileNav"><div class="mobile-nav-inner">${nav.map(n=>`<a class="${n.featured?'featured':''}" href="${attr(n.href)}">${esc(n.label)}</a>${(n.children||[]).map(c=>`<a class="sub" href="${attr(c.href)}">${esc(c.label)}</a>`).join('')}`).join('')}<a class="mobile-contact" href="mailto:${attr(state.site?.contactEmail)}">${esc(state.site?.contactEmail)}</a></div></div>`;
-    const toggle = $('#menuToggle');
-    toggle?.addEventListener('click', () => {
-      const open = document.body.classList.toggle('menu-open');
-      toggle.setAttribute('aria-expanded', String(open));
-    });
+        <div class="header-tools"><a class="search-link" href="buscar.html" aria-label="Buscar">⌕</a><button class="menu-toggle" id="menuToggle" type="button" aria-label="Abrir menú de navegación" aria-controls="mobileNav" aria-expanded="false"><span></span><span></span></button></div>
+      </div>`;
+    document.getElementById('mobileNav')?.remove();
+    const mobile = document.createElement('nav'); mobile.id='mobileNav';mobile.className='mobile-nav';
+    mobile.setAttribute('aria-label','Menú de navegación móvil');mobile.setAttribute('aria-hidden','true');
+    mobile.innerHTML=`<div class="mobile-nav-inner"><div class="mobile-nav-top"><span>EXPLORAR EL FORO</span><button type="button" class="mobile-close" aria-label="Cerrar menú">✕</button></div>
+      ${nav.map(n => { const children=(n.children||[]).filter(c=>c.href&&c.label);
+        return `<div class="mobile-nav-group ${n.featured?'mobile-featured':''}"><div class="mobile-nav-row"><a href="${attr(n.href)}">${esc(n.label)}</a>${children.length?`<button type="button" class="mobile-sub-toggle" aria-expanded="false" aria-label="Ver subsecciones de ${attr(n.label)}">+</button>`:''}</div>${children.length?`<div class="mobile-submenu" hidden>${children.map(c=>`<a href="${attr(c.href)}">${esc(c.label)}</a>`).join('')}</div>`:''}</div>`;
+      }).join('')}
+      <div class="mobile-nav-bottom"><a href="buscar.html">Buscar contenidos ↗</a><a href="mailto:${attr(state.site?.contactEmail||'foroeconomiadelvisitante@gmail.com')}">Contacto ↗</a></div></div>`;
+    document.body.appendChild(mobile);
+    const toggle=$('#menuToggle');
+    const close=()=>{document.body.classList.remove('menu-open');toggle?.setAttribute('aria-expanded','false');toggle?.setAttribute('aria-label','Abrir menú de navegación');mobile.setAttribute('aria-hidden','true');};
+    const open=()=>{document.body.classList.add('menu-open');toggle?.setAttribute('aria-expanded','true');toggle?.setAttribute('aria-label','Cerrar menú de navegación');mobile.setAttribute('aria-hidden','false');mobile.querySelector('.mobile-close')?.focus();};
+    toggle?.addEventListener('click',()=>document.body.classList.contains('menu-open')?close():open());
+    mobile.querySelector('.mobile-close')?.addEventListener('click',close);
+    mobile.querySelectorAll('.mobile-sub-toggle').forEach(button=>button.addEventListener('click',()=>{
+      const panel=button.closest('.mobile-nav-group').querySelector('.mobile-submenu');const expanded=button.getAttribute('aria-expanded')==='true';
+      button.setAttribute('aria-expanded',String(!expanded)); button.textContent=expanded?'+':'−';panel.hidden=expanded;
+    }));
+    mobile.querySelectorAll('a').forEach(link=>link.addEventListener('click',close));
+    document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.body.classList.contains('menu-open')){close();toggle?.focus();}});
+    window.addEventListener('resize',()=>{if(window.innerWidth>1120) close();});
     addEventListener('scroll', () => $('#siteHeader')?.classList.toggle('scrolled', scrollY > 18), {passive:true});
   }
 
