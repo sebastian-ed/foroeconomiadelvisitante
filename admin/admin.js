@@ -244,6 +244,39 @@
   function richYouTubeId(value=''){
     try {const u=new URL(value);if(u.hostname==='youtu.be')return /^[\w-]{11}$/.test(u.pathname.slice(1))?u.pathname.slice(1):'';if(/(^|\.)youtube(?:-nocookie)?\.com$/.test(u.hostname)){const id=u.searchParams.get('v')||u.pathname.split('/').filter(Boolean).pop();return /^[\w-]{11}$/.test(id)?id:'';}}catch{}return '';
   }
+  // Editor de bloques: estructura conservada como HTML para compatibilidad con el CMS anterior.
+  function enhanceBlockEditor(root,ed) {
+    const shell=ed.parentElement;
+    shell.classList.add('foro-block-shell');
+    const familyNames=[...new Set([state.theme?.headingFont,state.theme?.subtitleFont,state.theme?.bodyFont,'Instrument Serif','DM Sans','Inter','Lora','Playfair Display','Cormorant Garamond','Libre Baskerville','Montserrat','Manrope','Georgia','Arial'].filter(Boolean))];
+    const bar=document.createElement('div');bar.className='foro-context-bar';
+    bar.innerHTML=`<span class="foro-block-label">Seleccioná un bloque</span><select data-block-font aria-label="Tipografía"><option value="">Fuente global</option>${familyNames.map(f=>`<option value="${esc(f)}">${esc(f)}</option>`).join('')}</select><select data-block-size aria-label="Tamaño"><option value="">Tamaño</option>${[14,16,18,20,24,28,32,40,48,56,64,80].map(v=>`<option value="${v}px">${v}px</option>`).join('')}</select><select data-block-leading aria-label="Interlineado">${['1','1.2','1.4','1.6','1.8','2'].map(v=>`<option value="${v}">${v} interlínea</option>`).join('')}</select><button data-block-action="bold" title="Negrita"><b>B</b></button><button data-block-action="italic" title="Cursiva"><i>I</i></button><button data-block-action="left" title="Izquierda">⇤</button><button data-block-action="center" title="Centrar">≡</button><button data-block-action="right" title="Derecha">⇥</button><button data-block-action="duplicate" title="Duplicar">⧉</button><button data-block-action="delete" title="Eliminar">×</button>`;
+    shell.insertBefore(bar,ed);
+    let active=null;
+    const dispatch=()=>ed.dispatchEvent(new Event('input',{bubbles:true}));
+    const normalize=()=>{
+      [...ed.childNodes].forEach(node=>{
+        if(node.nodeType===3 && node.textContent.trim()){const q=document.createElement('p');q.textContent=node.textContent;node.replaceWith(q)}
+        else if(node.nodeType===1 && !['P','H2','H3','H4','UL','OL','BLOCKQUOTE','HR','FIGURE','DIV'].includes(node.tagName)){
+          const q=document.createElement('p');q.innerHTML=node.outerHTML;node.replaceWith(q);
+        }
+      });
+      [...ed.children].forEach(el=>{el.draggable=true;el.classList.add('foro-edit-block');if(!el.hasAttribute('tabindex'))el.tabIndex=0});
+    };
+    normalize();
+    ed.addEventListener('click',e=>{const block=e.target.closest('.foro-edit-block');if(block && ed.contains(block)){active?.classList.remove('is-selected');active=block;active.classList.add('is-selected');bar.querySelector('.foro-block-label').textContent=block.tagName==='FIGURE'?'Medio':block.tagName==='P'?'Párrafo':block.tagName==='H2'?'Título':block.tagName==='H3'?'Subtítulo':block.tagName;bar.querySelector('[data-block-leading]').value=block.style.lineHeight||'1.6';}});
+    ed.addEventListener('focusin',e=>{const block=e.target.closest('.foro-edit-block');if(block){active?.classList.remove('is-selected');active=block;active.classList.add('is-selected')}});
+    ed.addEventListener('dragstart',e=>{const block=e.target.closest('.foro-edit-block');if(!block)return;active=block;block.classList.add('is-dragging');e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain','reorder')});
+    ed.addEventListener('dragover',e=>{e.preventDefault();const target=e.target.closest('.foro-edit-block');if(target&&target!==active){const midpoint=target.getBoundingClientRect().top+target.getBoundingClientRect().height/2;ed.insertBefore(active,e.clientY<midpoint?target:target.nextSibling)}});
+    ed.addEventListener('drop',e=>{e.preventDefault();active?.classList.remove('is-dragging');normalize();dispatch()});
+    ed.addEventListener('dragend',()=>{active?.classList.remove('is-dragging');dispatch()});
+    ed.addEventListener('input',normalize);
+    bar.querySelectorAll('select').forEach(select=>select.onchange=()=>{if(!active)return;const attr=select.hasAttribute('data-block-font')?'fontFamily':select.hasAttribute('data-block-size')?'fontSize':'lineHeight';active.style[attr]=select.value;dispatch();active.focus()});
+    bar.querySelectorAll('[data-block-action]').forEach(btn=>btn.onclick=()=>{if(!active)return;const op=btn.dataset.blockAction;if(['left','center','right'].includes(op))active.style.textAlign=op;else if(op==='bold')active.style.fontWeight=active.style.fontWeight==='bold'?'normal':'bold';else if(op==='italic')active.style.fontStyle=active.style.fontStyle==='italic'?'normal':'italic';else if(op==='duplicate'){const node=active.cloneNode(true);active.after(node);active=node;normalize()}else if(op==='delete'){const next=active.nextElementSibling||active.previousElementSibling;active.remove();active=next}dispatch()});
+    // Block inserts after the selected block instead of at the end.
+    ed.foroAddBlock=(el)=>{if(active&&ed.contains(active))active.after(el);else ed.append(el);normalize();active?.classList.remove('is-selected');active=el;active.classList.add('is-selected');dispatch();el.scrollIntoView({block:'nearest',behavior:'smooth'})};
+    return ed;
+  }
   function wireRich(root){
     const ed=$('[data-rich-editor]',root);if(!ed)return null;
     $$('[data-cmd]',root).forEach(b=>b.onclick=()=>{ed.focus();let val=b.dataset.val||null;if(b.dataset.cmd==='createLink'){val=prompt('URL del enlace:','https://');if(!val||!/^https?:\/\//i.test(val))return;}if(b.dataset.cmd==='formatBlock')val=`<${val}>`;document.execCommand(b.dataset.cmd,false,val);ed.dispatchEvent(new Event('input',{bubbles:true}));});
@@ -263,8 +296,8 @@
           const cap=document.createElement('figcaption');cap.textContent='Descripción del medio';element.append(cap);
         }else {toast('Ingresá una URL válida');return;}
       }else if(type==='hr'){}else if(type==='ul'){element.innerHTML='<li>Primer elemento</li>';}else{element.textContent=type==='p'?'Escribí tu párrafo…':type==='blockquote'?'Escribí una cita…':type==='h2'?'Nuevo título':'Nuevo subtítulo';}
-      ed.append(element,document.createElement('p'));ed.dispatchEvent(new Event('input',{bubbles:true}));element.scrollIntoView({block:'nearest',behavior:'smooth'});
-    });return ed;
+      ed.foroAddBlock?ed.foroAddBlock(element):(ed.append(element),ed.dispatchEvent(new Event('input',{bubbles:true})));
+    });enhanceBlockEditor(root,ed);return ed;
   }
 
   function openPost(post=null){
@@ -388,7 +421,7 @@
   $('#visualPage').onchange=reloadVisual;$('#visualReload').onclick=reloadVisual;$$('[data-device]').forEach(b=>b.onclick=()=>{visualDevice=b.dataset.device;$$('[data-device]').forEach(x=>x.classList.toggle('active',x===b));resizeVisual()});$('#visualFrame').onload=()=>{resizeVisual();setTimeout(pushPreview,120)};
   $('#previewReload').onclick=refreshPreview;$('#previewFrame').onload=()=>setTimeout(pushPreview,100);
   if('ResizeObserver'in window)new ResizeObserver(resizeVisual).observe($('#visualStage'));else addEventListener('resize',resizeVisual);
-  addEventListener('message',e=>{const m=e.data||{};if(m.type==='foro:inline-change'){setPath(state,m.path,m.value);markDirty();renderPages();renderSections();toast('Texto actualizado localmente')}if(m.type==='foro:edit-section'&&Number.isInteger(m.index))openSectionEditor(m.index);if(m.type==='foro:preview-ready')pushPreview()});
+  addEventListener('message',e=>{const m=e.data||{};if(m.type==='foro:inline-change'){setPath(state,m.path,m.value);markDirty();renderPages();renderSections();toast('Texto actualizado localmente')}if(m.type==='foro:inline-style'&&['fontFamily','fontSize','lineHeight','textAlign','fontWeight','fontStyle'].includes(m.key)&&typeof m.path==='string'&&typeof m.value==='string'){state.site.inlineStyles??={};state.site.inlineStyles[m.path]??={};state.site.inlineStyles[m.path][m.key]=m.value;markDirty()}if(m.type==='foro:open-pages')setView('pages');if(m.type==='foro:edit-section'&&Number.isInteger(m.index))openSectionEditor(m.index);if(m.type==='foro:preview-ready')pushPreview()});
   addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue=''}});
   boot();
 })();

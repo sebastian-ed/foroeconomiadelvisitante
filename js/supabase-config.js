@@ -1,6 +1,5 @@
-// Configuración pública de Supabase.
-// Completá estos dos valores después de crear el proyecto "foroeconomiadelvisitante".
-// No uses service_role en el navegador.
+// Configuración pública de Supabase del Foro.
+// Nunca incluir una clave service_role en archivos públicos.
 window.FORO_SUPABASE = {
   url: "https://dqpchhjsiwviqoocqonn.supabase.co",
   anonKey: "sb_publishable_qYtrXpwkVN2AJnvc6Go6zA_HumzynC0"

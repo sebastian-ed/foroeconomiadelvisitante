@@ -51,12 +51,17 @@
   function sanitizeRichHtml(html='') {
     const parser = new DOMParser();
     const doc = parser.parseFromString(`<div>${html}</div>`, 'text/html');
-    const allowed = new Set(['P','H2','H3','H4','UL','OL','LI','STRONG','EM','B','I','A','BLOCKQUOTE','BR','HR','FIGURE','FIGCAPTION','IMG','VIDEO','SOURCE','IFRAME','CODE','PRE']);
+    const allowed = new Set(['P','H2','H3','H4','UL','OL','LI','STRONG','EM','B','I','A','BLOCKQUOTE','BR','HR','FIGURE','FIGCAPTION','IMG','VIDEO','SOURCE','IFRAME','CODE','PRE','DIV','SPAN']);
     doc.body.querySelectorAll('*').forEach(el => {
       if (el.tagName === 'DIV' && el === doc.body.firstElementChild) return;
       if (!allowed.has(el.tagName)) { el.replaceWith(...el.childNodes); return; }
       [...el.attributes].forEach(a => {
         const safe = (el.tagName === 'A' && ['href','target','rel'].includes(a.name)) || (el.tagName === 'IMG' && ['src','alt','loading'].includes(a.name)) || (el.tagName === 'VIDEO' && ['src','controls','playsinline','preload','poster'].includes(a.name)) || (el.tagName === 'SOURCE' && ['src','type'].includes(a.name)) || (el.tagName === 'IFRAME' && ['src','title','loading','allow','allowfullscreen'].includes(a.name));
+        if (a.name==='style' && ['P','H2','H3','H4','BLOCKQUOTE','FIGURE','DIV','SPAN','UL','OL'].includes(el.tagName)) {
+          const styles = new Map();
+          ['text-align','line-height','font-family','font-size','font-weight','font-style','margin-top','margin-bottom'].forEach(k=>{const value=el.style.getPropertyValue(k).trim();if(value && !/[;{}<>]/.test(value) && value.length<140 && ((k==='font-family' && /^[a-z0-9 ,"'_-]+$/i.test(value)) || (k==='text-align' && /^(left|right|center|justify)$/.test(value)) || (k==='line-height' && /^(1|1\.[0-9]{1,2}|2|2\.[0-5])$/.test(value)) || (k==='font-size' && /^(?:[1-9][0-9]?|1[0-5][0-9])px$/.test(value)) || (k==='font-weight' && /^(normal|bold|[1-9]00)$/.test(value)) || (k==='font-style' && /^(normal|italic)$/.test(value)) || (k.startsWith('margin-') && /^\d{1,3}px$/.test(value))))styles.set(k,value)});
+          el.removeAttribute('style');styles.forEach((v,k)=>el.style.setProperty(k,v));return;
+        }
         if (!safe) el.removeAttribute(a.name);
       });
       if (el.tagName === 'A') {
@@ -125,8 +130,8 @@
     root.setProperty('--font-button',fontStack(t.buttonFont || t.bodyFont,'Arial'));
     root.setProperty('--font-eyebrow',fontStack(t.eyebrowFont || t.bodyFont,'Arial'));
     root.setProperty('--font-article',fontStack(t.articleFont || t.headingFont,'Georgia'));
-    root.setProperty('--font-body',fontStack(t.bodyFont || 'DM Sans','Arial'));
-    root.setProperty('--font-heading',fontStack(t.headingFont || 'Instrument Serif','Georgia'));
+    root.setProperty('--font-body',fontStack(t.bodyFont || 'DM Sans','Arial'),'important');
+    root.setProperty('--font-heading',fontStack(t.headingFont || 'Instrument Serif','Georgia'),'important');
   }
 
 
@@ -404,7 +409,17 @@
   function setupInlineEditing() {
     if (!inlineMode) return;
     document.body.classList.add('cms-inline-mode');
+    const inlineStyles=state.site?.inlineStyles||{};
+    $$('[data-cms-path]').forEach(el=>{const st=inlineStyles[el.dataset.cmsPath]||{};['fontFamily','fontSize','lineHeight','textAlign','fontWeight','fontStyle'].forEach(k=>{if(st[k])el.style[k]=st[k]})});
+    const toolbar=document.createElement('div');toolbar.className='cms-inline-toolbar';toolbar.innerHTML=`<span>Editar texto</span><select aria-label="Tipografía" data-inline-font><option value="">Fuente institucional</option>${['Instrument Serif','DM Sans','Inter','Playfair Display','Lora','Newsreader','Montserrat','Libre Baskerville','Georgia'].map(f=>`<option>${f}</option>`).join('')}</select><select aria-label="Tamaño" data-inline-size><option value="">Tamaño</option>${[14,16,18,22,26,32,40,48,64,80,100].map(n=>`<option value="${n}px">${n}px</option>`).join('')}</select><select aria-label="Interlineado" data-inline-line>${['1','1.2','1.4','1.6','1.8','2'].map(n=>`<option value="${n}">${n} línea</option>`).join('')}</select><button type="button" data-inline="left" title="Izquierda">⇤</button><button type="button" data-inline="center" title="Centro">≡</button><button type="button" data-inline="right" title="Derecha">⇥</button><button type="button" data-inline="bold" title="Negrita"><b>B</b></button><button type="button" data-inline="italic" title="Cursiva"><i>I</i></button><button type="button" data-inline="add" title="Agregar bloques">＋ Bloques</button>`;
+    document.body.appendChild(toolbar);
+    let selected=null;
+    function changeInline(key,value){if(!selected)return;selected.style[key]=value;const path=selected.dataset.cmsPath;state.site.inlineStyles??={};state.site.inlineStyles[path]??={};state.site.inlineStyles[path][key]=value;parent.postMessage({type:'foro:inline-style',path,key,value},'*')}
+    $$('select',toolbar).forEach(sel=>sel.onchange=()=>{if(sel.dataset.inlineFont!==undefined)changeInline('fontFamily',sel.value);else if(sel.dataset.inlineSize!==undefined)changeInline('fontSize',sel.value);else changeInline('lineHeight',sel.value)});
+    $$('[data-inline]',toolbar).forEach(btn=>btn.onclick=()=>{const op=btn.dataset.inline;if(op==='add'){const section=selected?.closest('[data-section-index]');if(section)parent.postMessage({type:'foro:edit-section',index:Number(section.dataset.sectionIndex)},'*');else parent.postMessage({type:'foro:open-pages'},'*');return}if(['left','center','right'].includes(op))changeInline('textAlign',op);if(op==='bold')changeInline('fontWeight',selected.style.fontWeight==='bold'?'normal':'bold');if(op==='italic')changeInline('fontStyle',selected.style.fontStyle==='italic'?'normal':'italic')});
     $$('[data-cms-path]').forEach(el => {
+      el.addEventListener('click',()=>{selected=el;toolbar.classList.add('is-visible');toolbar.querySelector('[data-inline-line]').value=el.style.lineHeight||'1.6'});
+
       el.addEventListener('focus',()=>el.classList.add('cms-editing'));
       el.addEventListener('blur',()=>{
         el.classList.remove('cms-editing');
@@ -438,6 +453,7 @@
     if(page!=='home' && state.pages?.[page]?.extraHtml && !['post','event'].includes(page)){
       const extra=document.createElement('section');extra.className='section cms-page-extra';extra.innerHTML=`<div class="shell article-body">${sanitizeRichHtml(state.pages[page].extraHtml)}</div>`;$('#main').append(extra);
     }
+    Object.entries(state.site?.inlineStyles||{}).forEach(([path,styles])=>{document.querySelectorAll('[data-cms-path]').forEach(el=>{if(el.dataset.cmsPath!==path)return;['fontFamily','fontSize','lineHeight','textAlign','fontWeight','fontStyle'].forEach(k=>{if(styles[k])el.style[k]=styles[k]})})});
     setupInlineEditing();
     enhanceMediaPlayback();
   }
