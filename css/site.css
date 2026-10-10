@@ -212,3 +212,6 @@ html body .article-body h2,html body .article-body h3,html body .article-body h4
 
 /* Barra contextual de la vista visual (solo dentro del iframe CMS) */
 .cms-inline-toolbar{display:none;position:fixed;top:8px;left:50%;transform:translateX(-50%);width:min(98vw,980px);z-index:1000;background:#f3f9fc;color:#062e50;border:2px solid #0d7ea6;box-shadow:0 8px 30px #001b3080;padding:10px;gap:5px;align-items:center;flex-wrap:wrap;font:12px 'DM Sans',Arial,sans-serif}.cms-inline-toolbar.is-visible{display:flex}.cms-inline-toolbar select,.cms-inline-toolbar button{background:#fff;color:#052b4a;border:1px solid #aac3d1;border-radius:0;padding:7px;min-height:34px;font:12px Arial;max-width:160px}.cms-inline-toolbar button{cursor:pointer}.cms-inline-toolbar button:hover{background:#dceff5}.cms-inline-toolbar>span{font-weight:700;padding-inline:8px}
+
+/* Honor visibility toggles on institutional page */
+#main section[hidden]{display:none!important}

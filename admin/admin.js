@@ -185,12 +185,15 @@
     html+=`<article class="page-editor-card"><h3>El Foro · Misión y visión</h3><div class="form-stack">${inputField('Título misión','pages.el-foro.mission.missionTitle',foro.mission.missionTitle)}${inputField('Misión','pages.el-foro.mission.missionBody',foro.mission.missionBody,{textarea:true})}${inputField('Título visión','pages.el-foro.mission.visionTitle',foro.mission.visionTitle)}${inputField('Visión','pages.el-foro.mission.visionBody',foro.mission.visionBody,{textarea:true})}</div></article>`;
     html+=`<article class="page-editor-card"><h3>El Foro · Objetivos</h3><div class="form-stack">${foro.objectives.map((x,i)=>inputField(`Objetivo ${i+1}`,`pages.el-foro.objectives.${i}`,x,{textarea:true})).join('')}</div></article>`;
     html+=`<article class="page-editor-card"><h3>El Foro · Metodología y Comisión</h3><div class="form-stack">${inputField('Título metodología','pages.el-foro.methodology.title',foro.methodology.title)}${inputField('Metodología','pages.el-foro.methodology.body',foro.methodology.body,{textarea:true})}${inputField('Título comisión','pages.el-foro.commission.title',foro.commission.title)}${inputField('Comisión','pages.el-foro.commission.body',foro.commission.body,{textarea:true})}</div></article>`;
+    const sectionMeta=[['hero','Encabezado'],['quienes-somos','Quiénes somos'],['mision','Misión, visión y objetivos'],['metodologia','Metodología'],['comision','Comisión Promotora']];
+    const sectionOrder=(foro.layoutOrder?.length?foro.layoutOrder:sectionMeta.map(x=>x[0]));
+    html+=`<article class="page-editor-card"><h3>El Foro · Estructura de la página</h3><p>Ocultá bloques o cambiá el orden sin borrar el contenido. Se reflejará en la web al publicar.</p><div class="foro-page-order" id="foroPageOrder">${sectionOrder.map(k=>{const label=sectionMeta.find(x=>x[0]===k)?.[1]||k;return `<div class="foro-page-order-row" data-section-id="${k}" draggable="true"><span class="foro-order-handle">⠿</span><strong>${label}</strong><label><input type="checkbox" data-page-visibility="${k}" ${foro.hiddenSections?.includes(k)?'':'checked'}> Visible</label><button type="button" data-order-move="up">↑</button><button type="button" data-order-move="down">↓</button></div>`}).join('')}</div></article>`;
     const part=d.participa;
     html+=`<article class="page-editor-card"><h3>Participá · Encabezado</h3><div class="form-stack">${inputField('Antetítulo','pages.participa.hero.eyebrow',part.hero.eyebrow)}${inputField('Título','pages.participa.hero.title',part.hero.title,{textarea:true})}${inputField('Descripción','pages.participa.hero.body',part.hero.body,{textarea:true})}</div></article>`;
     html+=`<article class="page-editor-card"><h3>Participá · Opciones</h3><div class="form-stack">${part.options.map((x,i)=>`${inputField(`Opción ${i+1} · título`,`pages.participa.options.${i}.title`,x.title)}${inputField(`Opción ${i+1} · descripción`,`pages.participa.options.${i}.body`,x.body,{textarea:true})}`).join('')}</div></article>`;
     const editablePages=[['el-foro','El Foro'],['participa','Participá'],['conocimiento','Conocimiento'],['actividades','Actividades'],['voces','Voces'],['newsletter','Newsletter']];
     editablePages.forEach(([key,title])=>{html+=`<article class="page-editor-card"><h3>${title} · Bloques adicionales</h3><p>Creá secciones editoriales, títulos, texto, fotografías, entrevistas y videos. Podés reordenarlos dentro del editor.</p>${richEditorHtml(d[key]?.extraHtml||'')}</article>`});
-    $('#pagesEditor').innerHTML=html;$$('[data-rich-editor]',$('#pagesEditor')).forEach((ed,i)=>{wireRich(ed.closest('.page-editor-card'));ed.addEventListener('input',()=>{const key=editablePages[i][0];state.pages[key]??={};state.pages[key].extraHtml=ed.innerHTML;markDirty()})});$$('[data-edit-path]',$('#pagesEditor')).forEach(el=>el.oninput=()=>{setPath(state,el.dataset.editPath,el.value);markDirty()});
+    $('#pagesEditor').innerHTML=html;const reorder=$('#foroPageOrder');if(reorder){const persist=()=>{state.pages['el-foro'].layoutOrder=[...reorder.querySelectorAll('[data-section-id]')].map(el=>el.dataset.sectionId);state.pages['el-foro'].hiddenSections=[...reorder.querySelectorAll('[data-page-visibility]')].filter(el=>!el.checked).map(el=>el.dataset.pageVisibility);markDirty()};reorder.onchange=persist;reorder.onclick=e=>{const btn=e.target.closest('[data-order-move]');if(!btn)return;const row=btn.closest('[data-section-id]');if(btn.dataset.orderMove==='up'&&row.previousElementSibling)row.previousElementSibling.before(row);if(btn.dataset.orderMove==='down'&&row.nextElementSibling)row.nextElementSibling.after(row);persist()};let drag=null;reorder.addEventListener('dragstart',e=>{drag=e.target.closest('[data-section-id]')});reorder.addEventListener('dragover',e=>e.preventDefault());reorder.addEventListener('drop',e=>{e.preventDefault();const to=e.target.closest('[data-section-id]');if(drag&&to&&drag!==to){to.before(drag);persist()}})};$$('[data-rich-editor]',$('#pagesEditor')).forEach((ed,i)=>{wireRich(ed.closest('.page-editor-card'));ed.addEventListener('input',()=>{const key=editablePages[i][0];state.pages[key]??={};state.pages[key].extraHtml=ed.innerHTML;markDirty()})});$$('[data-edit-path]',$('#pagesEditor')).forEach(el=>el.oninput=()=>{setPath(state,el.dataset.editPath,el.value);markDirty()});
   }
 
   function renderDesign(){
@@ -271,30 +274,59 @@
     ed.addEventListener('drop',e=>{e.preventDefault();active?.classList.remove('is-dragging');normalize();dispatch()});
     ed.addEventListener('dragend',()=>{active?.classList.remove('is-dragging');dispatch()});
     ed.addEventListener('input',normalize);
+    ed.addEventListener('keydown',e=>{if(e.key!=='Enter'||e.shiftKey)return;const block=window.getSelection()?.anchorNode?.parentElement?.closest('.foro-edit-block');if(block&&['H2','H3','BLOCKQUOTE'].includes(block.tagName)){e.preventDefault();const para=document.createElement('p');para.append(document.createElement('br'));block.after(para);normalize();const range=document.createRange();range.selectNodeContents(para);range.collapse(true);const sel=window.getSelection();sel.removeAllRanges();sel.addRange(range);dispatch()}});
+
     bar.querySelectorAll('select').forEach(select=>select.onchange=()=>{if(!active)return;const attr=select.hasAttribute('data-block-font')?'fontFamily':select.hasAttribute('data-block-size')?'fontSize':'lineHeight';active.style[attr]=select.value;dispatch();active.focus()});
     bar.querySelectorAll('[data-block-action]').forEach(btn=>btn.onclick=()=>{if(!active)return;const op=btn.dataset.blockAction;if(['left','center','right'].includes(op))active.style.textAlign=op;else if(op==='bold')active.style.fontWeight=active.style.fontWeight==='bold'?'normal':'bold';else if(op==='italic')active.style.fontStyle=active.style.fontStyle==='italic'?'normal':'italic';else if(op==='duplicate'){const node=active.cloneNode(true);active.after(node);active=node;normalize()}else if(op==='delete'){const next=active.nextElementSibling||active.previousElementSibling;active.remove();active=next}dispatch()});
     // Block inserts after the selected block instead of at the end.
     ed.foroAddBlock=(el)=>{if(active&&ed.contains(active))active.after(el);else ed.append(el);normalize();active?.classList.remove('is-selected');active=el;active.classList.add('is-selected');dispatch();el.scrollIntoView({block:'nearest',behavior:'smooth'})};
     return ed;
   }
+
+  // Selector integrado: nunca interrumpe la edición con window.prompt.
+  function chooseRichMedia(kind,onChoose){
+    document.getElementById('foro-media-picker')?.remove();
+    const modal=document.createElement('div');modal.id='foro-media-picker';modal.className='foro-media-picker-overlay';
+    modal.innerHTML=`<div class="foro-media-picker-dialog" role="dialog" aria-modal="true" aria-label="Seleccionar medio"><header><div><small>BIBLIOTECA MULTIMEDIA</small><h2>${kind==='youtube'?'Insertar video de YouTube':kind==='video'?'Seleccionar video':'Seleccionar imagen'}</h2></div><button type="button" data-close aria-label="Cerrar">✕</button></header><div class="foro-media-picker-body"><label>URL de ${kind==='youtube'?'YouTube':'imagen o video'}<input data-url type="url" placeholder="https://..." autocomplete="off"></label><div data-preview class="foro-picker-preview">Pegá un enlace o seleccioná un archivo para ver una vista previa.</div><div class="foro-picker-tools"><strong>Archivos de tu biblioteca</strong><input type="search" data-filter placeholder="Buscar por nombre…"></div><div data-grid class="foro-picker-grid"></div></div><footer><button type="button" data-close>Cancelar</button><button type="button" data-insert disabled>Insertar medio</button></footer></div>`;
+    document.body.append(modal);
+    const input=modal.querySelector('[data-url]'),preview=modal.querySelector('[data-preview]'),grid=modal.querySelector('[data-grid]'),insert=modal.querySelector('[data-insert]');
+    const close=()=>modal.remove();modal.querySelectorAll('[data-close]').forEach(b=>b.onclick=close);
+    const renderPreview=()=>{const raw=input.value.trim();preview.replaceChildren();insert.disabled=true;
+      if(!raw){preview.textContent='Seleccioná un archivo o pegá una URL.';return}
+      let node;
+      if(kind==='youtube') {const id=richYouTubeId(raw);if(!id){preview.textContent='El enlace no es válido.';return}node=document.createElement('iframe');node.src=`https://www.youtube-nocookie.com/embed/${id}?rel=0&controls=1`;node.title='Vista previa YouTube';node.allow='encrypted-media; picture-in-picture';node.allowFullscreen=true}
+      else {try{const u=new URL(raw,location.href);if(!['http:','https:'].includes(u.protocol))throw Error('protocolo')}catch{preview.textContent='Ingresá una URL válida.';return}node=document.createElement(kind==='image'?'img':'video');node.src=raw;if(kind==='video'){node.controls=true;node.preload='metadata';node.playsInline=true}}
+      preview.append(node);insert.disabled=false;
+    };
+    input.addEventListener('input',renderPreview);
+    insert.onclick=()=>{if(!insert.disabled){onChoose(input.value.trim());close()}};
+    const draw=()=>{const filter=(modal.querySelector('[data-filter]').value||'').toLowerCase();const assets=mediaAssets.filter(a=>(kind==='image'?(a.mime_type||'').startsWith('image/'):(a.mime_type||'').startsWith('video/'))&&(!filter||(a.name||'').toLowerCase().includes(filter)));
+      grid.replaceChildren();if(kind==='youtube'){grid.textContent='Los videos de YouTube se incorporan mediante el enlace y se previsualizan arriba.';return}
+      if(!assets.length){grid.textContent='No hay archivos de este tipo en la biblioteca.';return}
+      assets.forEach(a=>{const card=document.createElement('button');card.type='button';card.className='foro-picker-item';const media=document.createElement(kind==='image'?'img':'video');media.src=a.url;if(kind==='video')media.preload='metadata';const label=document.createElement('span');label.textContent=a.name||'Archivo';card.append(media,label);card.onclick=()=>{grid.querySelectorAll('.selected').forEach(x=>x.classList.remove('selected'));card.classList.add('selected');input.value=a.url;renderPreview()};grid.append(card)});
+    };modal.querySelector('[data-filter]').addEventListener('input',draw);draw();
+    if(!mediaAssets.length&&db.configured){loadMedia().then(()=>{if(modal.isConnected)draw()}).catch(()=>{})}
+    input.focus();
+  }
+
   function wireRich(root){
     const ed=$('[data-rich-editor]',root);if(!ed)return null;
     $$('[data-cmd]',root).forEach(b=>b.onclick=()=>{ed.focus();let val=b.dataset.val||null;if(b.dataset.cmd==='createLink'){val=prompt('URL del enlace:','https://');if(!val||!/^https?:\/\//i.test(val))return;}if(b.dataset.cmd==='formatBlock')val=`<${val}>`;document.execCommand(b.dataset.cmd,false,val);ed.dispatchEvent(new Event('input',{bubbles:true}));});
     $$('[data-add-rich]',root).forEach(b=>b.onclick=()=>{
       const type=b.dataset.addRich;let element=document.createElement(type==='image'||type==='video'||type==='youtube'?'figure':type);
       if(type==='image'||type==='video'||type==='youtube'){
-        const examples=mediaAssets.filter(a=>type==='image'?(a.mime_type||'').startsWith('image/'):(a.mime_type||'').startsWith('video/')).slice(0,18);
-        const hint=examples.length?'\nBiblioteca: '+examples.map((x,i)=>`${i+1}. ${x.name}`).join(' | '):'';
-        let raw=prompt(type==='youtube'?'Pegá el enlace de YouTube:':'Pegá la URL del archivo, o indicá el número de un medio de tu biblioteca:'+hint,'');
-        if(!raw)return;raw=raw.trim();if(/^\d+$/.test(raw)&&examples[Number(raw)-1])raw=examples[Number(raw)-1].url;
-        if(type==='youtube'){
-          const id=richYouTubeId(raw);if(!id){toast('Enlace YouTube no válido');return;}
-          element.className='rich-media rich-youtube';element.dataset.youtube=id;
-          element.innerHTML=`<iframe src="https://www.youtube-nocookie.com/embed/${id}?rel=0&controls=1" title="Video de entrevista" loading="lazy" allow="accelerometer; encrypted-media; picture-in-picture" allowfullscreen></iframe><figcaption>Video de YouTube</figcaption>`;
-        }else if(/^https?:\/\//i.test(raw)||raw.startsWith('/')){
-          element.className='rich-media';let media=document.createElement(type==='image'?'img':'video');media.src=raw;if(type==='video'){media.controls=true;media.playsInline=true;media.preload='metadata';}else media.alt='Imagen del artículo';element.append(media);
-          const cap=document.createElement('figcaption');cap.textContent='Descripción del medio';element.append(cap);
-        }else {toast('Ingresá una URL válida');return;}
+        chooseRichMedia(type, (raw)=>{
+          if(type==='youtube'){
+            const id=richYouTubeId(raw);if(!id){toast('Enlace de YouTube inválido');return;}
+            element.className='rich-media rich-youtube';element.dataset.youtube=id;
+            element.innerHTML=`<iframe src="https://www.youtube-nocookie.com/embed/${id}?rel=0&controls=1" title="Video de YouTube" loading="lazy" allow="encrypted-media; picture-in-picture" allowfullscreen></iframe><figcaption contenteditable="true">Video de YouTube</figcaption>`;
+          }else{
+            element.className='rich-media';const media=document.createElement(type==='image'?'img':'video');media.src=raw;
+            if(type==='video'){media.controls=true;media.playsInline=true;media.preload='metadata'}else media.alt='Imagen del artículo';
+            element.append(media);const cap=document.createElement('figcaption');cap.contentEditable='true';cap.textContent='Epígrafe (opcional)';element.append(cap);
+          }
+          ed.foroAddBlock?ed.foroAddBlock(element):(ed.append(element),ed.dispatchEvent(new Event('input',{bubbles:true})));
+        });return;
       }else if(type==='hr'){}else if(type==='ul'){element.innerHTML='<li>Primer elemento</li>';}else{element.textContent=type==='p'?'Escribí tu párrafo…':type==='blockquote'?'Escribí una cita…':type==='h2'?'Nuevo título':'Nuevo subtítulo';}
       ed.foroAddBlock?ed.foroAddBlock(element):(ed.append(element),ed.dispatchEvent(new Event('input',{bubbles:true})));
     });enhanceBlockEditor(root,ed);return ed;

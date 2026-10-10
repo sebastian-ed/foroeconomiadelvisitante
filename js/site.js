@@ -296,8 +296,17 @@
       <section class="section mission-section" id="mision"><div class="shell"><div class="mission-grid"><div><span>01</span>${editable('h3',d.mission.missionTitle,'pages.el-foro.mission.missionTitle')}${editable('p',d.mission.missionBody,'pages.el-foro.mission.missionBody')}</div><div><span>02</span>${editable('h3',d.mission.visionTitle,'pages.el-foro.mission.visionTitle')}${editable('p',d.mission.visionBody,'pages.el-foro.mission.visionBody')}</div></div><div class="objectives"><div><span class="eyebrow">OBJETIVOS</span><h2>Qué busca impulsar el Foro</h2></div><ol>${(d.objectives||[]).map((x,i)=>`<li><span>${String(i+1).padStart(2,'0')}</span>${editable('p',x,`pages.el-foro.objectives.${i}`)}</li>`).join('')}</ol></div></div></section>
       <section class="section method-section" id="metodologia"><div class="shell editorial-split"><div><span class="eyebrow">METODOLOGÍA</span>${editable('h2',d.methodology.title,'pages.el-foro.methodology.title')}</div>${editable('p',d.methodology.body,'pages.el-foro.methodology.body','big-body')}</div></section>
       <section class="section commission-section" id="comision"><div class="shell commission-card"><div><span class="eyebrow">GOBERNANZA</span>${editable('h2',d.commission.title,'pages.el-foro.commission.title')}</div>${editable('p',d.commission.body,'pages.el-foro.commission.body')}<a class="btn outline" href="participa.html">Contactar al Foro</a></div></section>`;
+    reorderForoSections();
   }
 
+  function reorderForoSections(){
+    const d=state.pages?.['el-foro']||{};
+    const ids=['hero','quienes-somos','mision','metodologia','comision'];
+    const nodes={'hero':$('#main .internal-hero'),'quienes-somos':$('#quienes-somos'),'mision':$('#mision'),'metodologia':$('#metodologia'),'comision':$('#comision')};
+    (d.hiddenSections||[]).forEach(id=>{if(nodes[id])nodes[id].hidden=true});
+    const order=[...new Set([...(d.layoutOrder||[]),...ids])];
+    order.forEach(id=>{if(nodes[id])$('#main').append(nodes[id])});
+  }
   function collectionHeader(eyebrow,title,body) {
     return `<section class="collection-hero"><div class="shell"><span class="eyebrow">${esc(eyebrow)}</span><h1>${esc(title)}</h1><p>${esc(body)}</p></div></section>`;
   }
