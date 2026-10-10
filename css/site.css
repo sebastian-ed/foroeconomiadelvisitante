@@ -215,3 +215,13 @@ html body .article-body h2,html body .article-body h3,html body .article-body h4
 
 /* Honor visibility toggles on institutional page */
 #main section[hidden]{display:none!important}
+
+/* V12 – visual multiline editing and independent blocks */
+[data-cms-path]{white-space:pre-line}
+.cms-inline-mode [data-cms-path][contenteditable="true"]{white-space:pre-wrap!important;overflow-wrap:anywhere}
+.cms-structured-blocks{display:flex;flex-direction:column;gap:16px;padding-block:35px}
+.cms-structured-blocks .foro-visual-block{margin:0;max-width:100%;overflow-wrap:anywhere}
+.cms-structured-blocks figure{margin:10px 0 25px}
+.cms-structured-blocks figure img,.cms-structured-blocks figure video{display:block;width:100%;max-height:680px;object-fit:contain}
+.cms-structured-blocks iframe{display:block;width:100%;aspect-ratio:16/9;border:0}
+.cms-structured-blocks figcaption{font:13px/1.5 var(--font-body);opacity:.75;margin-top:8px}
