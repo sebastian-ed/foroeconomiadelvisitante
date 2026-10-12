@@ -387,3 +387,9 @@ html body .article-body h2,html body .article-body h3,html body .article-body h4
 .article-body .foro-article-carousel-actions button{background:#063e76;color:white;padding:9px 18px;border:0;cursor:pointer}
 .article-body:after{content:"";display:table;clear:both}
 @media(max-width:700px){.article-body figure.foro-image-right:has(img),.article-body figure.foro-image-left:has(img){float:none;clear:both;max-width:100%;width:100%;margin:1.5em 0}}
+
+/* V27: imagen editable junto al extracto, distinta de la destacada de tarjeta */
+.article-header .foro-excerpt-side-photo{float:right;width:min(37%,430px);margin:0 0 24px 38px}
+.article-header .foro-excerpt-side-photo figure{margin:0}.article-header .foro-excerpt-side-photo img{display:block;width:100%;height:auto;object-fit:contain}
+.article-header .article-head-grid>div:has(.foro-excerpt-side-photo){display:flow-root}
+@media(max-width:700px){.article-header .foro-excerpt-side-photo{float:none;width:100%;margin:10px 0 25px}}

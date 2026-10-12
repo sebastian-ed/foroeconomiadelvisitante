@@ -70,7 +70,7 @@
       if (el.tagName === 'DIV' && el === doc.body.firstElementChild) return;
       if (!allowed.has(el.tagName)) { el.replaceWith(...el.childNodes); return; }
       // Conservar solo clases editoriales conocidas; nunca clases arbitrarias del contenido.
-      const allowedClasses = new Set(['foro-document','foro-map-embed','rich-media','rich-youtube','foro-document-heading','foro-download','foro-media-image','foro-media-small','foro-media-medium','foro-media-wide','foro-image-right','foro-image-left','foro-image-below','foro-gallery-item']);
+      const allowedClasses = new Set(['foro-document','foro-map-embed','rich-media','rich-youtube','foro-document-heading','foro-download','foro-media-image','foro-media-small','foro-media-medium','foro-media-wide','foro-image-right','foro-image-excerpt-right','foro-image-left','foro-image-below','foro-gallery-item']);
       const safeClasses = [...el.classList].filter(c=>allowedClasses.has(c));
       el.removeAttribute('class');
       if (safeClasses.length) el.className=safeClasses.join(' ');
@@ -463,6 +463,8 @@
     applySeo({title:p.seo_title||`${p.title} — ${state.site.shortName}`,description:p.seo_description||p.excerpt,image:p.featured_image||state.site.seo?.image});
     const refs = Array.isArray(p.references) ? p.references : [];
     $('#main').innerHTML = `<article class="article-page"><header class="article-header"><div class="shell article-head-grid"><div><div class="article-kicker"><span>${esc(typeNames[p.type]||p.category||'Publicación')}</span><time>${esc(fmtDate(p.published_at,true))}</time></div><h1>${esc(p.title)}</h1><div class="article-byline">Escrito por: <strong>${esc(p.author_name||state.site.shortName)}</strong>${p.author_role?`<span> · ${esc(p.author_role)}</span>`:''}</div><div class="article-excerpt excerpt-paragraphs">${excerptParagraphs(p.excerpt)}</div></div></div></header><div class="shell article-layout"><aside><span>CONTENIDO</span><a href="#articulo">Artículo</a>${refs.length?'<a href="#fuentes">Fuentes</a>':''}<a href="participa.html">Enviar un aporte</a></aside><div class="article-body" id="articulo">${sanitizeRichHtml(p.content_html||'')}${refs.length?`<div class="references" id="fuentes"><h2>Fuentes y referencias</h2><ol>${refs.map(r=>`<li>${esc(r)}</li>`).join('')}</ol></div>`:''}</div></div></article>`;
+    const excerptPhoto=$('#articulo figure.foro-image-excerpt-right');
+    if(excerptPhoto){const wrapper=document.createElement('div');wrapper.className='foro-excerpt-side-photo';excerptPhoto.before(document.createComment('Imagen lateral del extracto'));wrapper.append(excerptPhoto);const area=document.querySelector('.article-header .article-head-grid > div');const excerpt=area?.querySelector('.article-excerpt');if(excerpt)excerpt.before(wrapper)}
   }
 
   function renderEventPage() {
@@ -633,6 +635,8 @@
   addEventListener('message', e => {
     const m=e.data||{};
     if (m.type==='foro:cms-preview' && m.payload) {
+      if(Array.isArray(m.posts))posts=m.posts;
+      if(Array.isArray(m.events))events=m.events;
       state=mergeDeep(structuredClone(defaults),m.payload);
       const focused=document.activeElement;
       if(inlineMode && focused?.isContentEditable && focused.matches('[data-cms-path]')){
@@ -648,9 +652,9 @@
 
   async function boot() {
     try {
-      if (db.configured && !previewMode) {
-        const [remote,remotePosts,remoteEvents] = await Promise.all([db.loadSiteContent(),db.listPosts({limit:250}),db.listEvents({limit:250})]);
-        if (remote) state=migrateLegacyPalette(mergeDeep(structuredClone(defaults),remote));
+      if (db.configured) {
+        const [remote,remotePosts,remoteEvents] = await Promise.all([previewMode?Promise.resolve(null):db.loadSiteContent(),db.listPosts({limit:250}),db.listEvents({limit:250})]);
+        if (remote && !previewMode) state=migrateLegacyPalette(mergeDeep(structuredClone(defaults),remote));
         if (Array.isArray(remotePosts)) posts=remotePosts;
         if (Array.isArray(remoteEvents)) events=remoteEvents;
       }

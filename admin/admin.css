@@ -178,3 +178,18 @@ dialog.foro-nested-dialog .foro-media-picker-dialog{max-height:min(90dvh,900px);
 .foro-interior-quick label{font-size:11px;font-weight:700;color:#092c46}
 .foro-interior-quick input,.foro-interior-quick textarea{display:block;width:100%;margin-top:4px;padding:8px;font:12px/1.4 inherit;color:#082e50;background:white;border:1px solid #bdd3e1}
 @media(max-width:900px){#postDialog .dialog-grid{grid-template-columns:1fr}#postDialog .editor-side{grid-template-columns:1fr}#postDialog .dialog-body{padding:12px}}
+
+/* V27: selección múltiple, imagen lateral real dentro del editor y previsualización amplia */
+.rich-editor{display:flow-root;min-height:240px}
+.rich-editor figure.foro-image-right{float:right;clear:right;width:min(43%,390px);max-width:43%;margin:.4em 0 1.5em 2em}
+.rich-editor figure.foro-image-left{float:left;clear:left;width:min(43%,390px);max-width:43%;margin:.4em 2em 1.5em 0}
+.rich-editor figure.foro-image-below,.rich-editor figure.foro-gallery-item{clear:both;margin:1.8em 0}
+.rich-editor figure.rich-media img{display:block;width:100%;height:auto}
+.rich-editor .foro-block-check{width:18px;height:18px;position:absolute;top:7px;left:7px;z-index:5;accent-color:#087eaa;cursor:pointer;opacity:.8}
+.rich-editor .foro-edit-block{position:relative}
+.rich-editor .foro-multi-selected{outline:3px solid #0d7ea6!important;background:#e3f4fa!important}
+.foro-context-bar [data-select-count]{margin-left:auto;font-size:11px;font-weight:700;color:#063e76}
+.foro-context-bar [data-bulk-action]{border:1px solid #b6d1df;background:#eef8fc;color:#063e76;padding:8px 9px;cursor:pointer}
+@media(max-width:680px){.rich-editor figure.foro-image-right,.rich-editor figure.foro-image-left{float:none;width:100%;max-width:100%;margin:20px 0}}
+
+.rich-editor figure.foro-image-excerpt-right{float:right;width:36%;max-width:36%;margin:0 0 25px 2em;outline:2px dotted #0d7ea6}
