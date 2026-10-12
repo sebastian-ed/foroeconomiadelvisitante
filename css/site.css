@@ -346,3 +346,20 @@ html body .article-body h2,html body .article-body h3,html body .article-body h4
 .excerpt-paragraphs > p{margin:0 0 1.15em;white-space:normal!important;line-height:inherit;font:inherit;color:inherit}
 .excerpt-paragraphs > p:last-child{margin-bottom:0}
 .post-copy .excerpt-paragraphs > p,.event-main .excerpt-paragraphs > p{font-size:inherit}
+
+/* V23 — Archivo editorial: tarjetas concisas, autoría y documentos de lectura cómoda. */
+.post-card .post-intro{font-size:14px;line-height:1.6;color:var(--muted);margin:8px 0 14px;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+.post-byline{color:var(--muted);font-size:12px;margin:0 0 18px}
+.article-header .article-head-grid{grid-template-columns:minmax(0,1fr);max-width:1100px}
+.article-header .article-excerpt{max-width:840px;margin-top:28px}
+.article-byline{color:var(--muted);font:500 14px/1.6 var(--font-body);margin-top:12px}
+.article-byline strong{color:var(--ink)}
+.article-body figure.foro-document{max-width:100%;width:100%;padding:0;border:0;background:transparent}
+.article-body .foro-document iframe{width:100%;height:min(88vh,1050px);min-height:650px;background:#fff;border:1px solid var(--line)}
+.article-body figure.foro-document .foro-document-heading{padding:0 0 16px;color:var(--ink)}
+.article-body figure.foro-document figcaption{padding:12px 0;color:var(--muted)}
+.article-body .foro-download{display:inline-flex!important;align-items:center;justify-content:center;min-height:50px;margin:22px 0 0;padding:12px 24px;background:#063e76!important;border:1px solid #063e76;color:#fff!important;font:700 14px/1.3 var(--font-body);text-decoration:none!important;transition:background .18s}
+.article-body .foro-download:hover{background:#0d7ea6!important;border-color:#0d7ea6}
+.article-body .foro-media-small{max-width:360px}.article-body .foro-media-medium{max-width:650px}.article-body .foro-media-wide{max-width:100%}
+.article-body figure.rich-media>img{display:block;width:100%;height:auto;object-fit:contain}
+@media(max-width:700px){.article-body .foro-document iframe{height:68vh;min-height:380px}.article-body .foro-download{width:100%}.article-header .article-head-grid{display:block}}

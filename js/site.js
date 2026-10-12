@@ -69,8 +69,13 @@
     doc.body.querySelectorAll('*').forEach(el => {
       if (el.tagName === 'DIV' && el === doc.body.firstElementChild) return;
       if (!allowed.has(el.tagName)) { el.replaceWith(...el.childNodes); return; }
+      // Conservar solo clases editoriales conocidas; nunca clases arbitrarias del contenido.
+      const allowedClasses = new Set(['foro-document','foro-map-embed','rich-media','rich-youtube','foro-document-heading','foro-download','foro-media-image','foro-media-small','foro-media-medium','foro-media-wide']);
+      const safeClasses = [...el.classList].filter(c=>allowedClasses.has(c));
+      el.removeAttribute('class');
+      if (safeClasses.length) el.className=safeClasses.join(' ');
       [...el.attributes].forEach(a => {
-        const safe = (el.tagName === 'A' && ['href','target','rel','download'].includes(a.name)) || (el.tagName === 'IMG' && ['src','alt','loading'].includes(a.name)) || (el.tagName === 'VIDEO' && ['src','controls','playsinline','preload','poster'].includes(a.name)) || (el.tagName === 'SOURCE' && ['src','type'].includes(a.name)) || (el.tagName === 'IFRAME' && ['src','title','loading','allow','allowfullscreen'].includes(a.name));
+        const safe = (a.name==='class' && !!el.className) || (el.tagName === 'A' && ['href','target','rel','download'].includes(a.name)) || (el.tagName === 'IMG' && ['src','alt','loading'].includes(a.name)) || (el.tagName === 'VIDEO' && ['src','controls','playsinline','preload','poster'].includes(a.name)) || (el.tagName === 'SOURCE' && ['src','type'].includes(a.name)) || (el.tagName === 'IFRAME' && ['src','title','loading','allow','allowfullscreen'].includes(a.name));
         if (a.name==='style' && ['P','H2','H3','H4','BLOCKQUOTE','FIGURE','DIV','SPAN','UL','OL'].includes(el.tagName)) {
           const styles = new Map();
           ['text-align','line-height','font-family','font-size','font-weight','font-style','margin-top','margin-bottom'].forEach(k=>{const value=el.style.getPropertyValue(k).trim();if(value && !/[;{}<>]/.test(value) && value.length<140 && ((k==='font-family' && /^[a-z0-9 ,"'_-]+$/i.test(value)) || (k==='text-align' && /^(left|right|center|justify)$/.test(value)) || (k==='line-height' && /^(1|1\.[0-9]{1,2}|2|2\.[0-5])$/.test(value)) || (k==='font-size' && /^(?:[1-9][0-9]?|1[0-5][0-9])px$/.test(value)) || (k==='font-weight' && /^(normal|bold|[1-9]00)$/.test(value)) || (k==='font-style' && /^(normal|italic)$/.test(value)) || (k.startsWith('margin-') && /^\d{1,3}px$/.test(value))))styles.set(k,value)});
@@ -86,6 +91,18 @@
       if (el.tagName === 'IMG') { if (!/^https?:\/\//i.test(el.getAttribute('src')||'') && !(el.getAttribute('src')||'').startsWith('/')) el.removeAttribute('src'); el.setAttribute('loading','lazy'); }
       if (['VIDEO','SOURCE'].includes(el.tagName) && !/^https?:\/\//i.test(el.getAttribute('src')||'')) el.removeAttribute('src');
       if (el.tagName === 'IFRAME') {const src=el.getAttribute('src')||'';if (!(/^https:\/\/www\.youtube-nocookie\.com\/embed\/[\w-]{11}(?:\?|$)/.test(src) || /^https:\/\/www\.google\.com\/maps\?q=[^<>]+&output=embed$/.test(src) || /^https:\/\/view\.officeapps\.live\.com\/op\/embed\.aspx\?src=https%3A%2F%2F/i.test(src) || /^https:\/\/[^\s<>]+\.pdf(?:[?#]|$)/i.test(src))) {el.remove();return;} el.setAttribute('loading','lazy');el.setAttribute('referrerpolicy','strict-origin-when-cross-origin');}
+    });
+    // Compatibilidad con documentos insertados en versiones anteriores.
+    doc.querySelectorAll('figure.foro-document').forEach(figure=>{
+      const heading=figure.querySelector('.foro-document-heading');
+      const link=heading?.querySelector('a[href]');
+      const text=heading?.querySelector('strong')?.textContent?.trim()||'';
+      const generic=/^(?:\d{10,}-)?[^\s]+\.(?:pdf|docx?|xlsx?|pptx?)$/i.test(text)||text==='Documento';
+      if (heading && generic) heading.querySelector('strong')?.remove();
+      if (heading && !heading.querySelector('strong')?.textContent?.trim()) heading.remove();
+      const caption=figure.querySelector('figcaption');
+      if(caption && /^(?:Descripción del archivo \(opcional\)|Epígrafe \(opcional\))$/i.test(caption.textContent.trim()))caption.remove();
+      if(link){link.classList.add('foro-download');link.textContent='↓ Descargar documento';figure.append(link)}
     });
     return doc.body.firstElementChild?.innerHTML || '';
   }
@@ -315,9 +332,15 @@
     const normalized=String(value||'').replace(/\r\n?/g,'\n');
     return normalized.split(/\n[\t ]*\n+/).map(part=>'<p>'+esc(part).replace(/\n/g,'<br>')+'</p>').join('');
   }
+  function cardIntro(value,max=185){
+    const text=String(value||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();
+    if(text.length<=max)return esc(text);
+    let cut=text.slice(0,max);const space=cut.lastIndexOf(' ');if(space>max*.6)cut=cut.slice(0,space);
+    return esc(cut)+'…';
+  }
   function postCard(p, large=false) {
     const href=`articulo.html?slug=${encodeURIComponent(p.slug)}`;
-    return `<article class="post-card ${large?'large':''}"><a class="post-visual ${p.featured_image?'has-image':''}" href="${href}" ${p.featured_image?`style="background-image:url('${attr(p.featured_image)}')"`:''}><span>${esc(typeNames[p.type]||p.category||'Publicación')}</span>${!p.featured_image?`<div class="visual-mark">${esc((p.category||typeNames[p.type]||'FORO').slice(0,2).toUpperCase())}</div>`:''}</a><div class="post-copy"><div class="post-meta"><span>${esc(p.category||typeNames[p.type]||'Conocimiento')}</span><time>${esc(fmtDate(p.published_at))}</time></div><h3><a href="${href}">${esc(p.title)}</a></h3><div class="article-excerpt excerpt-paragraphs">${excerptParagraphs(p.excerpt)}</div><a class="read-link" href="${href}">Leer publicación <span>↗</span></a></div></article>`;
+    return `<article class="post-card ${large?'large':''}"><a class="post-visual ${p.featured_image?'has-image':''}" href="${href}" ${p.featured_image?`style="background-image:url('${attr(p.featured_image)}')"`:''}><span>${esc(typeNames[p.type]||p.category||'Publicación')}</span>${!p.featured_image?`<div class="visual-mark">${esc((p.category||typeNames[p.type]||'FORO').slice(0,2).toUpperCase())}</div>`:''}</a><div class="post-copy"><div class="post-meta"><span>${esc(p.category||typeNames[p.type]||'Conocimiento')}</span><time>${esc(fmtDate(p.published_at))}</time></div><h3><a href="${href}">${esc(p.title)}</a></h3><p class="post-intro">${cardIntro(p.excerpt)}</p><div class="post-byline">Por ${esc(p.author_name||state.site.shortName)}</div><a class="read-link" href="${href}">Leer publicación <span>↗</span></a></div></article>`;
   }
 
   function renderCollection(s,i,kind='knowledge') {
@@ -429,7 +452,7 @@
     if (!p) { $('#main').innerHTML=notFound('Publicación no encontrada'); return; }
     applySeo({title:p.seo_title||`${p.title} — ${state.site.shortName}`,description:p.seo_description||p.excerpt,image:p.featured_image||state.site.seo?.image});
     const refs = Array.isArray(p.references) ? p.references : [];
-    $('#main').innerHTML = `<article class="article-page"><header class="article-header"><div class="shell article-head-grid"><div><div class="article-kicker"><span>${esc(typeNames[p.type]||p.category||'Publicación')}</span><time>${esc(fmtDate(p.published_at,true))}</time></div><h1>${esc(p.title)}</h1><div class="article-excerpt excerpt-paragraphs">${excerptParagraphs(p.excerpt)}</div><div class="article-author"><strong>${esc(p.author_name||state.site.shortName)}</strong>${p.author_role?`<span>${esc(p.author_role)}</span>`:''}</div></div>${p.featured_image?`<div class="article-image" style="background-image:url('${attr(p.featured_image)}')"></div>`:`<div class="article-cover-abstract"><img src="${attr(state.site.icon)}" alt=""><span>${esc(p.category||'Conocimiento')}</span></div>`}</div></header><div class="shell article-layout"><aside><span>CONTENIDO</span><a href="#articulo">Artículo</a>${refs.length?'<a href="#fuentes">Fuentes</a>':''}<a href="participa.html">Enviar un aporte</a></aside><div class="article-body" id="articulo">${sanitizeRichHtml(p.content_html||'')}${refs.length?`<div class="references" id="fuentes"><h2>Fuentes y referencias</h2><ol>${refs.map(r=>`<li>${esc(r)}</li>`).join('')}</ol></div>`:''}</div></div></article>`;
+    $('#main').innerHTML = `<article class="article-page"><header class="article-header"><div class="shell article-head-grid"><div><div class="article-kicker"><span>${esc(typeNames[p.type]||p.category||'Publicación')}</span><time>${esc(fmtDate(p.published_at,true))}</time></div><h1>${esc(p.title)}</h1><div class="article-byline">Escrito por: <strong>${esc(p.author_name||state.site.shortName)}</strong>${p.author_role?`<span> · ${esc(p.author_role)}</span>`:''}</div><div class="article-excerpt excerpt-paragraphs">${excerptParagraphs(p.excerpt)}</div></div></div></header><div class="shell article-layout"><aside><span>CONTENIDO</span><a href="#articulo">Artículo</a>${refs.length?'<a href="#fuentes">Fuentes</a>':''}<a href="participa.html">Enviar un aporte</a></aside><div class="article-body" id="articulo">${sanitizeRichHtml(p.content_html||'')}${refs.length?`<div class="references" id="fuentes"><h2>Fuentes y referencias</h2><ol>${refs.map(r=>`<li>${esc(r)}</li>`).join('')}</ol></div>`:''}</div></div></article>`;
   }
 
   function renderEventPage() {
