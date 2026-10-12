@@ -363,3 +363,12 @@ html body .article-body h2,html body .article-body h3,html body .article-body h4
 .article-body .foro-media-small{max-width:360px}.article-body .foro-media-medium{max-width:650px}.article-body .foro-media-wide{max-width:100%}
 .article-body figure.rich-media>img{display:block;width:100%;height:auto;object-fit:contain}
 @media(max-width:700px){.article-body .foro-document iframe{height:68vh;min-height:380px}.article-body .foro-download{width:100%}.article-header .article-head-grid{display:block}}
+
+/* V24: imagen destacada real, sin que los gradientes anteriores la oculten */
+.post-visual.has-image{background-image:var(--foro-featured-image)!important;background-size:cover!important;background-position:center!important;background-repeat:no-repeat!important}
+.post-visual.has-image::after{pointer-events:none}
+/* V24: navegación de secciones de páginas interiores */
+.section-tree-row.is-current{outline:2px solid #008cad;outline-offset:1px}
+.builder-inline-upload{display:block;width:100%;margin:8px 0;padding:11px;background:#edf7fa;border:1px solid #aac7d3;border-radius:5px;cursor:pointer;font-weight:700;color:#063e76}
+.builder-inline-upload input{display:block;width:100%;margin-top:8px;font-size:12px}
+.builder-inline-status{font-size:12px;color:#214d66;overflow-wrap:anywhere}
