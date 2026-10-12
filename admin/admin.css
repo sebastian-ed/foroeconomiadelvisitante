@@ -134,3 +134,10 @@
 .template-choice-actions{display:flex;gap:10px}
 
 .foro-picker-upload{display:block;margin:12px 0;font-size:13px;font-weight:600}.foro-picker-upload input{display:block;margin-top:8px;max-width:100%}.foro-file-thumb{display:block;min-height:65px;padding:16px;color:#063e76;background:#ecf4fa;font-weight:800}.foro-document-preview{width:100%;padding:6px;text-align:center}.foro-document-preview iframe{display:block;width:100%;height:300px;border:1px solid #c6d9e3}.rich-editor .foro-document iframe{display:block;width:100%;height:340px;border:1px solid #c6d9e3}.rich-editor .foro-map-embed iframe{display:block;width:100%;height:300px;border:0}.rich-editor .foro-document-heading{display:flex;justify-content:space-between;gap:12px;padding:14px;background:#eaf2f6}.rich-editor figure.foro-document,.rich-editor figure.foro-map-embed{margin:16px 0;border:1px solid #cadce7}.foro-picker-preview:has([data-map-preview]) iframe{height:290px}
+
+/* V21: los selectores deben estar en la pila modal nativa, por encima del editor */
+dialog.foro-nested-dialog{position:fixed;inset:0;margin:auto;width:100vw;height:100dvh;max-width:none;max-height:none;border:0;padding:20px;background:transparent;color:#082b49;overflow:auto;box-sizing:border-box;place-items:center;}
+dialog.foro-nested-dialog[open]{display:grid;}
+dialog.foro-nested-dialog::backdrop{background:rgba(2,17,37,.65);backdrop-filter:blur(2px)}
+dialog.foro-nested-dialog .foro-media-picker-dialog{max-height:min(90dvh,900px);min-height:0;overflow:hidden;}
+@media(max-width:640px){dialog.foro-nested-dialog{padding:8px}dialog.foro-nested-dialog .foro-media-picker-dialog{max-height:96dvh;width:100%;}}
