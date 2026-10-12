@@ -393,3 +393,11 @@ html body .article-body h2,html body .article-body h3,html body .article-body h4
 .article-header .foro-excerpt-side-photo figure{margin:0}.article-header .foro-excerpt-side-photo img{display:block;width:100%;height:auto;object-fit:contain}
 .article-header .article-head-grid>div:has(.foro-excerpt-side-photo){display:flow-root}
 @media(max-width:700px){.article-header .foro-excerpt-side-photo{float:none;width:100%;margin:10px 0 25px}}
+
+/* V28 - Una sola composición para extracto e imagen, sin floats ni duplicaciones. */
+.article-header .foro-excerpt-row{display:flex;gap:clamp(20px,3vw,42px);align-items:flex-start;max-width:1100px}
+.article-header .foro-excerpt-row>.article-excerpt{flex:1;min-width:0;margin:0}
+.article-header .foro-excerpt-row-image{order:2;flex:0 0 var(--excerpt-photo-width,35%);min-width:0}
+.article-header .foro-excerpt-row-image figure.foro-image-excerpt-right{float:none!important;max-width:none!important;width:100%!important;margin:0!important}
+.article-header .foro-excerpt-row-image figure img{display:block;width:100%;height:auto;max-height:610px;object-fit:cover;border-radius:8px}
+@media(max-width:700px){.article-header .foro-excerpt-row{flex-direction:column;gap:20px}.article-header .foro-excerpt-row-image{width:100%;flex:auto;order:2}.article-header .foro-excerpt-row[data-mobile-order="image-first"] .foro-excerpt-row-image{order:-1}}

@@ -464,7 +464,19 @@
     const refs = Array.isArray(p.references) ? p.references : [];
     $('#main').innerHTML = `<article class="article-page"><header class="article-header"><div class="shell article-head-grid"><div><div class="article-kicker"><span>${esc(typeNames[p.type]||p.category||'Publicación')}</span><time>${esc(fmtDate(p.published_at,true))}</time></div><h1>${esc(p.title)}</h1><div class="article-byline">Escrito por: <strong>${esc(p.author_name||state.site.shortName)}</strong>${p.author_role?`<span> · ${esc(p.author_role)}</span>`:''}</div><div class="article-excerpt excerpt-paragraphs">${excerptParagraphs(p.excerpt)}</div></div></div></header><div class="shell article-layout"><aside><span>CONTENIDO</span><a href="#articulo">Artículo</a>${refs.length?'<a href="#fuentes">Fuentes</a>':''}<a href="participa.html">Enviar un aporte</a></aside><div class="article-body" id="articulo">${sanitizeRichHtml(p.content_html||'')}${refs.length?`<div class="references" id="fuentes"><h2>Fuentes y referencias</h2><ol>${refs.map(r=>`<li>${esc(r)}</li>`).join('')}</ol></div>`:''}</div></div></article>`;
     const excerptPhoto=$('#articulo figure.foro-image-excerpt-right');
-    if(excerptPhoto){const wrapper=document.createElement('div');wrapper.className='foro-excerpt-side-photo';excerptPhoto.before(document.createComment('Imagen lateral del extracto'));wrapper.append(excerptPhoto);const area=document.querySelector('.article-header .article-head-grid > div');const excerpt=area?.querySelector('.article-excerpt');if(excerpt)excerpt.before(wrapper)}
+    if(excerptPhoto){
+      const parent=$('.article-header .article-head-grid > div');
+      const excerpt=parent?.querySelector('.article-excerpt');
+      if(excerpt){
+        const row=document.createElement('div');row.className='foro-excerpt-row';
+        const imgWrap=document.createElement('div');imgWrap.className='foro-excerpt-row-image';
+        imgWrap.append(excerptPhoto);
+        const percentage=Math.min(48,Math.max(30,Number(excerptPhoto.dataset.excerptWidth)||35));
+        row.style.setProperty('--excerpt-photo-width',percentage+'%');
+        row.dataset.mobileOrder=excerptPhoto.dataset.mobileOrder||'text-first';
+        excerpt.before(row);row.append(excerpt,imgWrap);
+      }
+    }
   }
 
   function renderEventPage() {

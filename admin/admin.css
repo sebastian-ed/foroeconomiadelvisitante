@@ -193,3 +193,10 @@ dialog.foro-nested-dialog .foro-media-picker-dialog{max-height:min(90dvh,900px);
 @media(max-width:680px){.rich-editor figure.foro-image-right,.rich-editor figure.foro-image-left{float:none;width:100%;max-width:100%;margin:20px 0}}
 
 .rich-editor figure.foro-image-excerpt-right{float:right;width:36%;max-width:36%;margin:0 0 25px 2em;outline:2px dotted #0d7ea6}
+
+/* V28: editor explícito de fotografía de extracto */
+.foro-excerpt-editor{border:1px solid #a9c7d7;background:#f5fafc}
+.foro-excerpt-editor-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(180px,.8fr);gap:20px;margin-top:14px}
+.foro-excerpt-media-preview{min-height:180px;border:1px dashed #b1cbd8;display:grid;place-items:center;padding:12px;color:#4e687a;background:#fff}
+.foro-excerpt-media-preview img{width:100%;height:260px;object-fit:contain}
+@media(max-width:700px){.foro-excerpt-editor-grid{grid-template-columns:1fr}}
