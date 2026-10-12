@@ -321,3 +321,12 @@ html body .article-body h2,html body .article-body h3,html body .article-body h4
 .foro-template-columns>div{min-width:0}
 .article-body p,.cms-extra-content p{white-space:pre-wrap}
 @media(max-width:700px){.foro-template-columns{grid-template-columns:1fr}}
+
+/* V18: documentos y mapas embebidos */
+.article-body .foro-document,.article-body .foro-map-embed{width:100%;margin:2em 0;border:1px solid var(--line);background:var(--surface,#fff)}
+.article-body .foro-document iframe{display:block;width:100%;height:min(75vh,760px);min-height:350px;border:0;background:#fff}
+.article-body .foro-map-embed iframe{display:block;width:100%;aspect-ratio:16/9;min-height:300px;border:0}
+.foro-document-heading{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:16px;font:14px/1.4 var(--font-body,Arial);flex-wrap:wrap}
+.foro-document-heading a{font-size:13px;font-weight:700;color:var(--navy,#063e76)!important}
+.foro-document figcaption,.foro-map-embed figcaption{font:12px/1.5 var(--font-body,Arial);padding:9px 16px}
+@media(max-width:600px){.article-body .foro-document iframe{min-height:380px;height:60vh}.article-body .foro-map-embed iframe{min-height:240px}}

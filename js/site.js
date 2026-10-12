@@ -70,7 +70,7 @@
       if (el.tagName === 'DIV' && el === doc.body.firstElementChild) return;
       if (!allowed.has(el.tagName)) { el.replaceWith(...el.childNodes); return; }
       [...el.attributes].forEach(a => {
-        const safe = (el.tagName === 'A' && ['href','target','rel'].includes(a.name)) || (el.tagName === 'IMG' && ['src','alt','loading'].includes(a.name)) || (el.tagName === 'VIDEO' && ['src','controls','playsinline','preload','poster'].includes(a.name)) || (el.tagName === 'SOURCE' && ['src','type'].includes(a.name)) || (el.tagName === 'IFRAME' && ['src','title','loading','allow','allowfullscreen'].includes(a.name));
+        const safe = (el.tagName === 'A' && ['href','target','rel','download'].includes(a.name)) || (el.tagName === 'IMG' && ['src','alt','loading'].includes(a.name)) || (el.tagName === 'VIDEO' && ['src','controls','playsinline','preload','poster'].includes(a.name)) || (el.tagName === 'SOURCE' && ['src','type'].includes(a.name)) || (el.tagName === 'IFRAME' && ['src','title','loading','allow','allowfullscreen'].includes(a.name));
         if (a.name==='style' && ['P','H2','H3','H4','BLOCKQUOTE','FIGURE','DIV','SPAN','UL','OL'].includes(el.tagName)) {
           const styles = new Map();
           ['text-align','line-height','font-family','font-size','font-weight','font-style','margin-top','margin-bottom'].forEach(k=>{const value=el.style.getPropertyValue(k).trim();if(value && !/[;{}<>]/.test(value) && value.length<140 && ((k==='font-family' && /^[a-z0-9 ,"'_-]+$/i.test(value)) || (k==='text-align' && /^(left|right|center|justify)$/.test(value)) || (k==='line-height' && /^(1|1\.[0-9]{1,2}|2|2\.[0-5])$/.test(value)) || (k==='font-size' && /^(?:[1-9][0-9]?|1[0-5][0-9])px$/.test(value)) || (k==='font-weight' && /^(normal|bold|[1-9]00)$/.test(value)) || (k==='font-style' && /^(normal|italic)$/.test(value)) || (k.startsWith('margin-') && /^\d{1,3}px$/.test(value))))styles.set(k,value)});
@@ -80,12 +80,12 @@
       });
       if (el.tagName === 'A') {
         const href = el.getAttribute('href') || '';
-        if (/^javascript:/i.test(href)) el.removeAttribute('href');
+        if (!/^(https?:\/\/|mailto:|\/|#)/i.test(href)) el.removeAttribute('href');
         el.setAttribute('rel','noopener noreferrer');
       }
       if (el.tagName === 'IMG') { if (!/^https?:\/\//i.test(el.getAttribute('src')||'') && !(el.getAttribute('src')||'').startsWith('/')) el.removeAttribute('src'); el.setAttribute('loading','lazy'); }
       if (['VIDEO','SOURCE'].includes(el.tagName) && !/^https?:\/\//i.test(el.getAttribute('src')||'')) el.removeAttribute('src');
-      if (el.tagName === 'IFRAME') {const src=el.getAttribute('src')||'';if (!/^https:\/\/www\.youtube-nocookie\.com\/embed\/[\w-]{11}(?:\?|$)/.test(src)) {el.remove();return;} el.setAttribute('loading','lazy');el.setAttribute('referrerpolicy','strict-origin-when-cross-origin');}
+      if (el.tagName === 'IFRAME') {const src=el.getAttribute('src')||'';if (!(/^https:\/\/www\.youtube-nocookie\.com\/embed\/[\w-]{11}(?:\?|$)/.test(src) || /^https:\/\/www\.google\.com\/maps\?q=[^<>]+&output=embed$/.test(src) || /^https:\/\/view\.officeapps\.live\.com\/op\/embed\.aspx\?src=https%3A%2F%2F/i.test(src) || /^https:\/\/[^\s<>]+\.pdf(?:[?#]|$)/i.test(src))) {el.remove();return;} el.setAttribute('loading','lazy');el.setAttribute('referrerpolicy','strict-origin-when-cross-origin');}
     });
     return doc.body.firstElementChild?.innerHTML || '';
   }
