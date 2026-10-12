@@ -330,3 +330,13 @@ html body .article-body h2,html body .article-body h3,html body .article-body h4
 .foro-document-heading a{font-size:13px;font-weight:700;color:var(--navy,#063e76)!important}
 .foro-document figcaption,.foro-map-embed figcaption{font:12px/1.5 var(--font-body,Arial);padding:9px 16px}
 @media(max-width:600px){.article-body .foro-document iframe{min-height:380px;height:60vh}.article-body .foro-map-embed iframe{min-height:240px}}
+
+/* V19 — El extracto conserva los saltos de párrafo escritos en el CMS.
+   Se aplica a la vista completa y a los extractos en tarjetas/listados. */
+.article-header .article-head-grid p,
+.article-header .article-excerpt,
+.post-card .post-copy > p,
+.event-card .event-main > p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
