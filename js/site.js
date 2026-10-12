@@ -407,7 +407,8 @@
     order.forEach(id=>{if(nodes[id])$('#main').append(nodes[id])});
   }
   function collectionHeader(eyebrow,title,body) {
-    return `<section class="collection-hero"><div class="shell"><span class="eyebrow">${esc(eyebrow)}</span><h1>${esc(title)}</h1><p>${esc(body)}</p></div></section>`;
+    const base='pages.'+page;const custom=state.pages?.[page]||{};
+    return `<section class="collection-hero" id="cabecera-${attr(page)}"><div class="shell"><span class="eyebrow">${esc(eyebrow)}</span>${editable('h1',custom.collectionTitle||title,base+'.collectionTitle')}${editable('p',custom.collectionDescription||body,base+'.collectionDescription')}</div></section>`;
   }
 
   function renderKnowledgePage() {
@@ -561,10 +562,10 @@
         }
       });
     });
-    $$(page==='el-foro'?'#main section[id]':'[data-section-index]').forEach(sec=>{
-      const b=document.createElement('button');b.type='button';b.className='cms-section-edit-button';b.textContent='✎ Editar sección / medios';b.onclick=e=>{e.preventDefault();e.stopPropagation();parent.postMessage({type:'foro:edit-section',index:Number(sec.dataset.sectionIndex)},'*')};sec.appendChild(b);
+    $$(page==='home'?'[data-section-index]':'#main > section, #main > article').forEach((sec,interiorIndex)=>{
+      const b=document.createElement('button');b.type='button';b.className='cms-section-edit-button';b.textContent='✎ Editar sección / medios';b.onclick=e=>{e.preventDefault();e.stopPropagation();parent.postMessage(page==='home'?{type:'foro:edit-section',index:Number(sec.dataset.sectionIndex)}:{type:'foro:edit-interior',page,index:interiorIndex},'*')};sec.appendChild(b);
       sec.addEventListener('click',e=>{if(e.target.closest('button,a,input,textarea,select,[data-cms-path]'))return;selected=null;selectSection(sec)});
-      sec.addEventListener('dblclick',e=>{if(e.target.closest('[data-cms-path]'))return;parent.postMessage({type:'foro:edit-section',index:Number(sec.dataset.sectionIndex)},'*')});
+      sec.addEventListener('dblclick',e=>{if(e.target.closest('[data-cms-path]'))return;parent.postMessage(page==='home'?{type:'foro:edit-section',index:Number(sec.dataset.sectionIndex)}:{type:'foro:edit-interior',page,index:interiorIndex},'*')});
     });
     document.addEventListener('keydown',e=>{
       if(e.key==='Escape' && selectedSection){document.activeElement?.blur?.();selected=null;selectSection(selectedSection);return}
