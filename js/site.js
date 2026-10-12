@@ -70,7 +70,7 @@
       if (el.tagName === 'DIV' && el === doc.body.firstElementChild) return;
       if (!allowed.has(el.tagName)) { el.replaceWith(...el.childNodes); return; }
       // Conservar solo clases editoriales conocidas; nunca clases arbitrarias del contenido.
-      const allowedClasses = new Set(['foro-document','foro-map-embed','rich-media','rich-youtube','foro-document-heading','foro-download','foro-media-image','foro-media-small','foro-media-medium','foro-media-wide']);
+      const allowedClasses = new Set(['foro-document','foro-map-embed','rich-media','rich-youtube','foro-document-heading','foro-download','foro-media-image','foro-media-small','foro-media-medium','foro-media-wide','foro-image-right','foro-image-left','foro-image-below','foro-gallery-item']);
       const safeClasses = [...el.classList].filter(c=>allowedClasses.has(c));
       el.removeAttribute('class');
       if (safeClasses.length) el.className=safeClasses.join(' ');
@@ -92,6 +92,8 @@
       if (['VIDEO','SOURCE'].includes(el.tagName) && !/^https?:\/\//i.test(el.getAttribute('src')||'')) el.removeAttribute('src');
       if (el.tagName === 'IFRAME') {const src=el.getAttribute('src')||'';if (!(/^https:\/\/www\.youtube-nocookie\.com\/embed\/[\w-]{11}(?:\?|$)/.test(src) || /^https:\/\/www\.google\.com\/maps\?q=[^<>]+&output=embed$/.test(src) || /^https:\/\/view\.officeapps\.live\.com\/op\/embed\.aspx\?src=https%3A%2F%2F/i.test(src) || /^https:\/\/[^\s<>]+\.pdf(?:[?#]|$)/i.test(src))) {el.remove();return;} el.setAttribute('loading','lazy');el.setAttribute('referrerpolicy','strict-origin-when-cross-origin');}
     });
+    // No mostrar epígrafes de ejemplo de versiones anteriores.
+    doc.querySelectorAll('figure figcaption').forEach(c=>{if(!c.textContent.trim()||/^(?:Epígrafe \(opcional\)|Descripción del archivo \(opcional\))$/i.test(c.textContent.trim()))c.remove()});
     // Compatibilidad con documentos insertados en versiones anteriores.
     doc.querySelectorAll('figure.foro-document').forEach(figure=>{
       const heading=figure.querySelector('.foro-document-heading');
@@ -107,6 +109,13 @@
     return doc.body.firstElementChild?.innerHTML || '';
   }
 
+  function configureArticleGalleries(){
+    document.querySelectorAll('.article-body').forEach(body=>{
+      const items=[...body.children];let batch=[];
+      const flush=()=>{if(!batch.length)return;const wrap=document.createElement('div');wrap.className='foro-article-carousel';const track=document.createElement('div');track.className='foro-article-carousel-track';batch[0].before(wrap);wrap.append(track);batch.forEach(el=>track.append(el));if(batch.length>1){const controls=document.createElement('div');controls.className='foro-article-carousel-actions';controls.innerHTML='<button type="button" data-dir="-1" aria-label="Imagen anterior">←</button><span></span><button type="button" data-dir="1" aria-label="Imagen siguiente">→</button>';wrap.append(controls);let index=0;const show=()=>{track.style.transform=`translateX(-${index*100}%)`;controls.querySelector('span').textContent=`${index+1} / ${batch.length}`};controls.querySelectorAll('button').forEach(btn=>btn.addEventListener('click',()=>{index=(index+Number(btn.dataset.dir)+batch.length)%batch.length;show()}));show()}batch=[]};
+      items.forEach(el=>{if(el.matches('figure.foro-gallery-item')) batch.push(el);else flush()});flush();
+    });
+  }
   function fmtDate(value, long=false) {
     if (!value) return '';
     const d = new Date(value);
@@ -615,6 +624,7 @@
     Object.entries(state.site?.inlineStyles||{}).forEach(([path,styles])=>{document.querySelectorAll('[data-cms-path]').forEach(el=>{if(el.dataset.cmsPath!==path)return;['fontFamily','fontSize','lineHeight','textAlign','fontWeight','fontStyle'].forEach(k=>{if(styles[k])el.style[k]=styles[k]})})});
     appendVisualBlocks();
     setupInlineEditing();
+    configureArticleGalleries();
     enhanceMediaPlayback();
     setupHeroCarousels();
   }

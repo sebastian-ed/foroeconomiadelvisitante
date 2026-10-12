@@ -154,3 +154,13 @@ dialog.foro-nested-dialog .foro-media-picker-dialog{max-height:min(90dvh,900px);
 .rich-editor figure.foro-document .foro-download{display:inline-block;margin:16px 0;padding:12px 22px;background:#063e76;color:#fff!important;text-decoration:none;border-radius:2px;font-size:14px;font-weight:700}
 .rich-editor .foro-media-small{max-width:360px}.rich-editor .foro-media-medium{max-width:650px}.rich-editor .foro-media-wide{max-width:100%}
 .rich-editor figure>img{max-width:100%;height:auto}
+
+/* V25: visual choices inside content editor */
+.foro-layout-help{display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:#eaf3f8;color:#0b3554;border:1px solid #bed6e6;padding:11px 13px;font-size:12px;line-height:1.5}
+.foro-layout-help strong{white-space:nowrap}.foro-layout-help span{flex:1;min-width:220px}
+.rich-editor figure.foro-image-right:has(img){float:right!important;width:42%!important;max-width:42%;margin:8px 0 20px 24px!important}
+.rich-editor figure.foro-image-left:has(img){float:left!important;width:42%!important;max-width:42%;margin:8px 24px 20px 0!important}
+.rich-editor figure.foro-image-below:has(img){float:none;clear:both;margin:20px auto!important}
+.rich-editor figure.foro-gallery-item:has(img){clear:both;outline:2px dashed #087fa6;outline-offset:3px}
+.rich-editor figure figcaption:empty{display:none}
+.rich-editor:after{display:table;content:"";clear:both}

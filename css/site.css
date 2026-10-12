@@ -372,3 +372,18 @@ html body .article-body h2,html body .article-body h3,html body .article-body h4
 .builder-inline-upload{display:block;width:100%;margin:8px 0;padding:11px;background:#edf7fa;border:1px solid #aac7d3;border-radius:5px;cursor:pointer;font-weight:700;color:#063e76}
 .builder-inline-upload input{display:block;width:100%;margin-top:8px;font-size:12px}
 .builder-inline-status{font-size:12px;color:#214d66;overflow-wrap:anywhere}
+
+/* V25 — composición editorial configurable */
+.article-body figure.rich-media:has(img){margin:1.7em 0;max-width:100%}
+.article-body figure.rich-media:has(img) figcaption:empty{display:none}
+.article-body figure.foro-image-right:has(img){float:right;clear:right;width:min(43%,390px);max-width:43%;margin:.35em 0 1.6em 2em}
+.article-body figure.foro-image-left:has(img){float:left;clear:left;width:min(43%,390px);max-width:43%;margin:.35em 2em 1.6em 0}
+.article-body figure.foro-image-below:has(img){clear:both;margin:2em auto}
+.article-body figure.foro-gallery-item:has(img){margin:0;flex:0 0 100%;width:100%;max-width:100%;min-width:0}
+.article-body .foro-article-carousel{width:100%;max-width:100%;overflow:hidden;clear:both;margin:2em 0}
+.article-body .foro-article-carousel-track{display:flex;transition:transform .35s ease;align-items:flex-start}
+.article-body .foro-article-carousel-track img{width:100%;height:auto;max-height:670px;object-fit:contain;margin:0}
+.article-body .foro-article-carousel-actions{display:flex;align-items:center;justify-content:center;gap:22px;margin:12px 0}
+.article-body .foro-article-carousel-actions button{background:#063e76;color:white;padding:9px 18px;border:0;cursor:pointer}
+.article-body:after{content:"";display:table;clear:both}
+@media(max-width:700px){.article-body figure.foro-image-right:has(img),.article-body figure.foro-image-left:has(img){float:none;clear:both;max-width:100%;width:100%;margin:1.5em 0}}
