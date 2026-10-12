@@ -340,3 +340,9 @@ html body .article-body h2,html body .article-body h3,html body .article-body h4
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+
+/* V20 — Párrafos reales en extractos (idénticos al editor y al sitio público). */
+.excerpt-paragraphs{white-space:normal!important;overflow-wrap:anywhere}
+.excerpt-paragraphs > p{margin:0 0 1.15em;white-space:normal!important;line-height:inherit;font:inherit;color:inherit}
+.excerpt-paragraphs > p:last-child{margin-bottom:0}
+.post-copy .excerpt-paragraphs > p,.event-main .excerpt-paragraphs > p{font-size:inherit}
