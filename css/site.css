@@ -300,3 +300,24 @@ html body .article-body h2,html body .article-body h3,html body .article-body h4
 }
 @media(max-width:380px){.brand{width:158px!important}.site-header .header-inner{gap:6px}.site-header .menu-toggle{width:42px!important;min-width:42px!important}}
 @media(prefers-reduced-motion:reduce){body>.mobile-nav{transition:none!important}}
+
+/* V17 hero: controles cromáticos, carrusel y contraste editorial */
+.cinematic-hero .hero-media-shade{background:rgba(2,25,47,var(--hero-overlay,.34))!important;z-index:3}
+.cinematic-hero .hero-media::after{display:none!important}
+.cinematic-hero .hero-media{transform:none!important;filter:none!important}
+.forum-hero-slide{position:absolute;inset:0;opacity:0;visibility:hidden;transition:opacity .85s ease,visibility .85s;overflow:hidden}
+.forum-hero-slide.is-active{opacity:1;visibility:visible}
+.forum-hero-slide>.hero-media-content{position:absolute;width:100%;height:100%;inset:0;object-fit:cover}
+.hero-slide-controls{position:absolute;right:max(24px,4vw);bottom:80px;z-index:7;display:flex;gap:7px}
+.hero-slide-controls button{background:rgba(3,30,52,.7);color:#fff;border:1px solid rgba(255,255,255,.55);padding:9px 12px;font:600 12px 'DM Sans',sans-serif;cursor:pointer}
+.hero-slide-controls button.active{background:#fff;color:#073454}
+.agenda-section .section-head h2,.agenda-section .section-head p,.agenda-section .section-head .eyebrow,.agenda-section .feed-head h2,.agenda-section .feed-head p{color:#092f4c!important}
+.agenda-section .btn.outline.light{background:#063f71!important;color:#fff!important;border-color:#063f71!important}
+.agenda-section .empty-state h3,.agenda-section .empty-state p{color:#092f4c!important}
+@media(max-width:700px){.hero-slide-controls{bottom:63px;right:15px}.hero-slide-controls button{padding:8px}}
+@media(prefers-reduced-motion:reduce){.forum-hero-slide{transition:none}}
+
+.foro-template-columns{display:grid;grid-template-columns:1fr 1fr;gap:clamp(24px,5vw,80px);align-items:start}
+.foro-template-columns>div{min-width:0}
+.article-body p,.cms-extra-content p{white-space:pre-wrap}
+@media(max-width:700px){.foro-template-columns{grid-template-columns:1fr}}

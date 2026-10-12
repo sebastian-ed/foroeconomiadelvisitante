@@ -273,8 +273,12 @@
     const c=s.content||{};
     const image = c.heroImage || 'assets/images/hero-territorio.jpg';
     const media=(s.media?.src)?s.media:{type:"image",src:image};
+    const slides=(Array.isArray(s.heroSlides)&&s.heroSlides.length?s.heroSlides:[media]).filter(x=>x?.src);
+    const overlay=Math.min(100,Math.max(0,Number(s.heroOverlay??34)))/100;
+    const interval=Math.max(3,Number(s.heroInterval)||7);
+    const slideMarkup=slides.map((slide,k)=>`<div class="forum-hero-slide ${k===0?'is-active':''}" data-slide="${k}">${mediaHtml(slide,image,'hero-media-content')}</div>`).join('');
     return `<section class="hero-forum cinematic-hero" id="${attr(s.settings?.anchor||s.id)}" data-section-index="${i}">
-      <div class="hero-media cms-hero-media">${mediaHtml(media,image,"hero-media-content")}<div class="hero-media-shade"></div></div>
+      <div class="hero-media cms-hero-media" data-hero-carousel data-interval="${interval}">${slideMarkup||mediaHtml(media,image,'hero-media-content')}<div class="hero-media-shade" style="--hero-overlay:${overlay}"></div>${slides.length>1?`<div class="hero-slide-controls" aria-label="Diapositivas">${slides.map((_,k)=>`<button type="button" data-hero-go="${k}" class="${k===0?'active':''}" aria-label="Mostrar diapositiva ${k+1}">${String(k+1).padStart(2,'0')}</button>`).join('')}</div>`:''}</div>
       <div class="shell cinematic-layout"><div class="hero-kicker"><span>ARGENTINA · PERSPECTIVA FEDERAL</span><span>FORO / ECONOMÍA DEL VISITANTE</span></div>
         <div class="cinematic-title">${editable('span',c.eyebrow,`sections.${i}.content.eyebrow`,'eyebrow')}${editable('h1',c.title,`sections.${i}.content.title`)}</div>
         <div class="cinematic-bottom"><div class="cinematic-index"><span>01 — 03</span><span>CONOCIMIENTO · ENCUENTRO · ACCIÓN</span></div><div class="cinematic-intro">${editable('p',c.body,`sections.${i}.content.body`,'hero-body')}<div class="hero-actions"><a class="btn primary" href="${attr(c.primaryHref)}">${esc(c.primaryLabel)} <span>↗</span></a><a class="btn text light" href="${attr(c.secondaryHref)}">${esc(c.secondaryLabel)} <span>↗</span></a></div></div><a class="scroll-cue" href="#economia-del-visitante" aria-label="Explorar el Foro">DESLIZÁ PARA EXPLORAR ↓</a></div>
@@ -283,6 +287,16 @@
     </section>`;
   }
 
+  function setupHeroCarousels(){
+    document.querySelectorAll('[data-hero-carousel]').forEach(carousel=>{
+      const slides=[...carousel.querySelectorAll('.forum-hero-slide')];if(slides.length<2)return;
+      let current=slides.findIndex(x=>x.classList.contains('is-active'));if(current<0)current=0;
+      const buttons=[...carousel.querySelectorAll('[data-hero-go]')];
+      const go=n=>{slides[current]?.classList.remove('is-active');slides[current]?.querySelectorAll('video').forEach(v=>v.pause());current=(n+slides.length)%slides.length;slides[current].classList.add('is-active');buttons.forEach(b=>b.classList.toggle('active',+b.dataset.heroGo===current));slides[current].querySelectorAll('video').forEach(v=>{try{v.currentTime=Number(v.dataset.start)||0;v.play().catch(()=>{})}catch(e){}})};
+      buttons.forEach(b=>b.addEventListener('click',()=>go(Number(b.dataset.heroGo))));
+      if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches){const timer=setInterval(()=>{if(!document.hidden&&document.contains(carousel))go(current+1);else if(!document.contains(carousel))clearInterval(timer)},Math.max(3,+carousel.dataset.interval||7)*1000)}
+    });
+  }
   function renderConcept(s,i) {
     const c=s.content||{};
     return `<section class="section concept-section" id="${attr(s.settings?.anchor||s.id)}" data-section-index="${i}"><div class="shell concept-grid"><div>${editable('span',c.eyebrow,`sections.${i}.content.eyebrow`,'eyebrow')}${editable('h2',c.title,`sections.${i}.content.title`)}${editable('p',c.body,`sections.${i}.content.body`,'concept-lead')}${editable('p',c.note,`sections.${i}.content.note`,'concept-note')}</div><div class="sector-matrix">${(s.items||[]).map((x,j)=>`<div class="sector-item">${s.itemMedia?.[j]?.src?`<div class="sector-item-media">${mediaHtml(s.itemMedia[j],'','sector-item-image')}</div>`:''}<span>${String(j+1).padStart(2,'0')}</span>${editable('strong',x,`sections.${i}.items.${j}`)}</div>`).join('')}</div></div></section>`;
@@ -574,6 +588,7 @@
     appendVisualBlocks();
     setupInlineEditing();
     enhanceMediaPlayback();
+    setupHeroCarousels();
   }
 
   addEventListener('message', e => {

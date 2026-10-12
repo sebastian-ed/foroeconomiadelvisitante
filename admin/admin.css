@@ -114,3 +114,21 @@
 .visual-sidepanel .section-tree-note{font-size:10px;color:#60798a;margin:6px 0 0}
 @media(max-width:980px){.visual-layout{grid-template-columns:250px minmax(0,1fr)}}
 @media(max-width:720px){.visual-layout{grid-template-columns:1fr;grid-template-rows:minmax(185px,35vh) minmax(500px,1fr);overflow:auto}.visual-view.active{height:auto;min-height:900px}.visual-sidepanel{overflow:auto}.visual-stage{min-height:500px}}
+
+/* V17. Carrusel, opacidad y plantillas */
+.cms-hero-editor input[type="range"]{width:100%;accent-color:#047fb0;cursor:pointer}
+.cms-slide-entry{border:1px solid #cbdbe6;padding:15px;margin:14px 0;background:#f8fbfe}
+.cms-slide-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.cms-slide-head strong{margin-right:auto;color:#092c4a}
+.cms-slide-head button{background:#fff;border:1px solid #cbdbe6;border-radius:4px;padding:5px 10px;color:#073454;cursor:pointer}
+.cms-hero-opacity-preview{height:185px;background:#0a304c;position:relative;overflow:hidden;margin-top:10px}
+.cms-hero-opacity-preview img,.cms-hero-opacity-preview video,.cms-hero-opacity-preview iframe{width:100%;height:100%;object-fit:cover;border:0}
+.editorial-template-picker{padding:18px;border:1px solid #c4d9e5;background:#f6fafc;color:#092f4e;margin:12px 0}
+.editorial-template-picker p{font-size:12px;color:#536b80}
+.template-choice-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px;margin:14px 0}
+.template-choice-grid button{background:#fff;border:1px solid #cbdbe6;text-align:left;padding:12px;cursor:pointer;color:#082b4b}
+.template-choice-grid button.selected{border:2px solid #0b77aa;background:#eaf5fa}
+.template-choice-grid button strong,.template-choice-grid button small{display:block}.template-choice-grid button small{margin-top:5px;color:#536b80}
+.template-example{max-height:280px;overflow:auto;padding:24px;border:1px solid #cbdbe6;background:white;color:#0a304c;margin-bottom:12px}
+.template-example p{margin:10px 0;line-height:1.65}.template-example img{max-width:100%;max-height:130px;object-fit:cover}
+.template-choice-actions{display:flex;gap:10px}
