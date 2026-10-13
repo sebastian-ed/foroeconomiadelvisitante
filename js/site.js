@@ -65,18 +65,18 @@
   function sanitizeRichHtml(html='') {
     const parser = new DOMParser();
     const doc = parser.parseFromString(`<div>${html}</div>`, 'text/html');
-    const allowed = new Set(['P','H2','H3','H4','UL','OL','LI','STRONG','EM','B','I','A','BLOCKQUOTE','BR','HR','FIGURE','FIGCAPTION','IMG','VIDEO','SOURCE','IFRAME','CODE','PRE','DIV','SPAN']);
+    const allowed = new Set(['P','H2','H3','H4','UL','OL','LI','STRONG','EM','B','I','A','BLOCKQUOTE','BR','HR','FIGURE','FIGCAPTION','IMG','VIDEO','SOURCE','IFRAME','CODE','PRE','DIV','SPAN','TABLE','THEAD','TBODY','TFOOT','TR','TD','TH','CAPTION','ASIDE']);
     doc.body.querySelectorAll('*').forEach(el => {
       if (el.tagName === 'DIV' && el === doc.body.firstElementChild) return;
       if (!allowed.has(el.tagName)) { el.replaceWith(...el.childNodes); return; }
       // Conservar solo clases editoriales conocidas; nunca clases arbitrarias del contenido.
-      const allowedClasses = new Set(['foro-document','foro-map-embed','rich-media','rich-youtube','foro-document-heading','foro-download','foro-media-image','foro-media-small','foro-media-medium','foro-media-wide','foro-image-right','foro-image-excerpt-right','foro-image-left','foro-image-below','foro-gallery-item']);
+      const allowedClasses = new Set(['foro-document','foro-map-embed','rich-media','rich-youtube','foro-document-heading','foro-download','foro-media-image','foro-media-small','foro-media-medium','foro-media-wide','foro-image-right','foro-image-excerpt-right','foro-image-left','foro-image-below','foro-gallery-item','foro-info-box','foro-imported-table']);
       const safeClasses = [...el.classList].filter(c=>allowedClasses.has(c));
       el.removeAttribute('class');
       if (safeClasses.length) el.className=safeClasses.join(' ');
       [...el.attributes].forEach(a => {
-        const safe = (a.name==='class' && !!el.className) || (el.tagName === 'A' && ['href','target','rel','download'].includes(a.name)) || (el.tagName === 'IMG' && ['src','alt','loading'].includes(a.name)) || (el.tagName === 'VIDEO' && ['src','controls','playsinline','preload','poster'].includes(a.name)) || (el.tagName === 'SOURCE' && ['src','type'].includes(a.name)) || (el.tagName === 'IFRAME' && ['src','title','loading','allow','allowfullscreen'].includes(a.name));
-        if (a.name==='style' && ['P','H2','H3','H4','BLOCKQUOTE','FIGURE','DIV','SPAN','UL','OL'].includes(el.tagName)) {
+        const safe = (a.name==='class' && !!el.className) || (el.tagName === 'A' && ['href','target','rel','download'].includes(a.name)) || (el.tagName === 'IMG' && ['src','alt','loading'].includes(a.name)) || (el.tagName === 'VIDEO' && ['src','controls','playsinline','preload','poster'].includes(a.name)) || (el.tagName === 'SOURCE' && ['src','type'].includes(a.name)) || (el.tagName === 'IFRAME' && ['src','title','loading','allow','allowfullscreen'].includes(a.name)) || (['TH','TD'].includes(el.tagName) && ['colspan','rowspan','scope'].includes(a.name));
+        if (a.name==='style' && ['P','H2','H3','H4','BLOCKQUOTE','FIGURE','DIV','SPAN','UL','OL','TABLE','TD','TH','ASIDE'].includes(el.tagName)) {
           const styles = new Map();
           ['text-align','line-height','font-family','font-size','font-weight','font-style','margin-top','margin-bottom'].forEach(k=>{const value=el.style.getPropertyValue(k).trim();if(value && !/[;{}<>]/.test(value) && value.length<140 && ((k==='font-family' && /^[a-z0-9 ,"'_-]+$/i.test(value)) || (k==='text-align' && /^(left|right|center|justify)$/.test(value)) || (k==='line-height' && /^(1|1\.[0-9]{1,2}|2|2\.[0-5])$/.test(value)) || (k==='font-size' && /^(?:[1-9][0-9]?|1[0-5][0-9])px$/.test(value)) || (k==='font-weight' && /^(normal|bold|[1-9]00)$/.test(value)) || (k==='font-style' && /^(normal|italic)$/.test(value)) || (k.startsWith('margin-') && /^\d{1,3}px$/.test(value))))styles.set(k,value)});
           el.removeAttribute('style');styles.forEach((v,k)=>el.style.setProperty(k,v));return;

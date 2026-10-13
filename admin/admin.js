@@ -288,7 +288,7 @@
 
   function mediaDatalist(){return `<datalist id="mediaUrlList">${mediaAssets.filter(a=>(a.mime_type||'').startsWith('image/')).map(a=>`<option value="${esc(a.url)}">${esc(a.name)}</option>`).join('')}</datalist>`}
   function richEditorHtml(content=''){
-    return `<div class="rich-toolbar" data-rich-toolbar><button type="button" data-cmd="bold"><b>B</b></button><button type="button" data-cmd="italic"><i>I</i></button><button type="button" data-cmd="formatBlock" data-val="h2">H2</button><button type="button" data-cmd="formatBlock" data-val="h3">H3</button><button type="button" data-cmd="formatBlock" data-val="p">P</button><button type="button" data-cmd="insertUnorderedList">• Lista</button><button type="button" data-cmd="insertOrderedList">1. Lista</button><button type="button" data-cmd="formatBlock" data-val="blockquote">❝</button><button type="button" data-cmd="createLink">Link</button><button type="button" data-cmd="removeFormat">Limpiar</button></div><div class="block-add-bar"><span>Agregar bloque</span><button type="button" data-add-rich="h2">Título</button><button type="button" data-add-rich="h3">Subtítulo</button><button type="button" data-add-rich="p">Párrafo</button><button type="button" data-add-rich="image">Imagen</button><button type="button" data-add-rich="youtube">YouTube</button><button type="button" data-add-rich="video">Video propio</button><button type="button" data-add-rich="document">PDF / Word / Excel</button><button type="button" data-add-rich="map">Mapa</button><button type="button" data-add-rich="blockquote">Cita</button><button type="button" data-add-rich="hr">Separador</button><button type="button" data-add-rich="ul">Lista</button></div><div class="foro-layout-help"><strong>Composición de imágenes</strong><span>Seleccioná la imagen en el cuerpo y elegí ubicación y tamaño en la barra. Para un carrusel inferior, elegí «Carrusel inferior» en dos o más imágenes consecutivas. Podés combinar una imagen lateral con otras abajo.</span></div><div class="rich-editor" contenteditable="true" data-rich-editor aria-label="Editor de bloques">${content||''}</div>`;
+    return `<div class="rich-toolbar" data-rich-toolbar><button type="button" data-cmd="bold"><b>B</b></button><button type="button" data-cmd="italic"><i>I</i></button><button type="button" data-cmd="formatBlock" data-val="h2">H2</button><button type="button" data-cmd="formatBlock" data-val="h3">H3</button><button type="button" data-cmd="formatBlock" data-val="p">P</button><button type="button" data-cmd="insertUnorderedList">• Lista</button><button type="button" data-cmd="insertOrderedList">1. Lista</button><button type="button" data-cmd="formatBlock" data-val="blockquote">❝</button><button type="button" data-cmd="createLink">Link</button><button type="button" data-cmd="removeFormat">Limpiar</button></div><div class="block-add-bar"><span>Agregar bloque</span><button type="button" data-add-rich="h2">Título</button><button type="button" data-add-rich="h3">Subtítulo</button><button type="button" data-add-rich="p">Párrafo</button><button type="button" data-add-rich="image">Imagen</button><button type="button" data-add-rich="youtube">YouTube</button><button type="button" data-add-rich="video">Video propio</button><button type="button" data-add-rich="document">PDF / Word / Excel</button><button type="button" data-add-rich="map">Mapa</button><button type="button" data-add-rich="table">Tabla</button><button type="button" data-add-rich="callout">Cuadro destacado</button><button type="button" data-add-rich="blockquote">Cita</button><button type="button" data-add-rich="hr">Separador</button><button type="button" data-add-rich="ul">Lista</button></div><div class="foro-layout-help"><strong>Composición de imágenes</strong><span>Seleccioná la imagen en el cuerpo y elegí ubicación y tamaño en la barra. Para un carrusel inferior, elegí «Carrusel inferior» en dos o más imágenes consecutivas. Podés combinar una imagen lateral con otras abajo.</span></div><div class="rich-editor" contenteditable="true" data-rich-editor aria-label="Editor de bloques">${content||''}</div>`;
   }
   function richYouTubeId(value=''){
     const raw=String(value||'').trim();
@@ -343,7 +343,7 @@
     const normalize=()=>{
       [...ed.childNodes].forEach(node=>{
         if(node.nodeType===3 && node.textContent.trim()){const q=document.createElement('p');q.textContent=node.textContent;node.replaceWith(q)}
-        else if(node.nodeType===1 && !['P','H2','H3','H4','UL','OL','BLOCKQUOTE','HR','FIGURE','DIV'].includes(node.tagName)){
+        else if(node.nodeType===1 && !['P','H2','H3','H4','UL','OL','BLOCKQUOTE','HR','FIGURE','DIV','TABLE','ASIDE'].includes(node.tagName)){
           const q=document.createElement('p');q.innerHTML=node.outerHTML;node.replaceWith(q);
         }
       });
@@ -436,6 +436,8 @@
     $$('[data-cmd]',root).forEach(b=>b.onclick=()=>{ed.focus();let val=b.dataset.val||null;if(b.dataset.cmd==='createLink'){val=prompt('URL del enlace:','https://');if(!val||!/^https?:\/\//i.test(val))return;}if(b.dataset.cmd==='formatBlock')val=`<${val}>`;document.execCommand(b.dataset.cmd,false,val);ed.dispatchEvent(new Event('input',{bubbles:true}));});
     $$('[data-add-rich]',root).forEach(b=>b.onclick=()=>{
       const type=b.dataset.addRich;let element=document.createElement(['image','video','youtube','document','map'].includes(type)?'figure':type);
+      if(type==='table'){element=window.ForoDocumentImport?.configureTable?.(element)||element;ed.foroAddBlock?ed.foroAddBlock(element):(ed.append(element),ed.dispatchEvent(new Event('input',{bubbles:true})));return;}
+      if(type==='callout'){element=document.createElement('div');element.className='foro-info-box';element.innerHTML='<h3>Idea destacada</h3><p>Escribí aquí un dato, conclusión o información relevante.</p>';ed.foroAddBlock?ed.foroAddBlock(element):(ed.append(element),ed.dispatchEvent(new Event('input',{bubbles:true})));return;}
       if(type==='map'){
         openRichMap(raw=>{const safe=String(raw||'').trim();if(!safe)return;const embed='https://www.google.com/maps?q='+encodeURIComponent(safe)+'&output=embed';element.className='rich-media foro-map-embed';element.innerHTML=`<iframe title="Mapa: ${esc(safe)}" src="${esc(embed)}" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe><figcaption>Mapa: ${esc(safe)}</figcaption>`;ed.foroAddBlock?ed.foroAddBlock(element):(ed.append(element),ed.dispatchEvent(new Event('input',{bubbles:true}))) });return;
       }
@@ -456,7 +458,7 @@
         });return;
       }else if(type==='hr'){}else if(type==='ul'){element.innerHTML='<li>Primer elemento</li>';}else{element.textContent=type==='p'?'Escribí tu párrafo…':type==='blockquote'?'Escribí una cita…':type==='h2'?'Nuevo título':'Nuevo subtítulo';}
       ed.foroAddBlock?ed.foroAddBlock(element):(ed.append(element),ed.dispatchEvent(new Event('input',{bubbles:true})));
-    });enhanceBlockEditor(root,ed);return ed;
+    });enhanceBlockEditor(root,ed);window.ForoDocumentImport?.attach?.(root,ed);return ed;
   }
 
   function wireFeaturedPicker(prefix){

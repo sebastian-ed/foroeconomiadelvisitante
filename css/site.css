@@ -426,3 +426,8 @@ html body .article-body h2,html body .article-body h3,html body .article-body h4
  .article-page .article-header .foro-excerpt-row > .foro-excerpt-row-image{order:2!important}
  .article-page .article-header .foro-excerpt-row[data-mobile-order="image-first"] > .foro-excerpt-row-image{order:-1!important}
 }
+/* V33: tablas y cuadros editoriales, adaptados a pantalla */
+.article-body table.foro-imported-table,.article-body table{border-collapse:collapse;width:100%;margin:1.75rem 0;font:inherit;font-size:clamp(.78rem,1vw,.98rem);line-height:1.45;display:block;max-width:100%;overflow-x:auto;white-space:normal;-webkit-overflow-scrolling:touch}
+.article-body table td,.article-body table th{border:1px solid #c8d6df;padding:13px 15px;min-width:110px;text-align:left;vertical-align:top;overflow-wrap:break-word}
+.article-body table th{background:#e4edf1;color:#063e76;font-weight:700}.article-body table tr:nth-child(even) td{background:#f4f7f8}
+.article-body .foro-info-box{border-left:4px solid #087aa1;padding:1.5rem 2rem;background:#e9f3f6;margin:2rem 0}.article-body .foro-info-box h3{margin:0 0 .6rem}
