@@ -583,11 +583,54 @@
   let activeBuilderSection=0;
   let selectedBuilderBlock=-1;
   let builderPage='home';
+  let visualArticle=null;
+  let articleDraft=null;
   const builderTypes=[['h2','Título'],['h3','Subtítulo'],['p','Párrafo'],['blockquote','Cita'],['image','Imagen'],['video','Video propio'],['youtube','YouTube'],['divider','Separador']];
   function builderTarget(){if(builderPage==='home'){return state.sections[activeBuilderSection]||(state.sections[0]||{})}state.pages[builderPage]??={};return state.pages[builderPage]}
   function ensureBuilderBlocks(){const obj=builderTarget();obj.visualBlocks??=[];return obj.visualBlocks}
   function builderSync(){markDirty();pushPreview()}
+  function articleVisualTree(){
+    if(!visualArticle)return '';
+    return `<div class="section-tree foro-article-tree"><strong>Artículo · edición visual</strong><p>Seleccioná el título, extracto o cuerpo directamente en la página de la derecha. Enter crea párrafos. Podés guardar sin salir del lienzo.</p><button type="button" data-article-back>← Volver a Conocimiento</button><button type="button" data-article-save class="btn primary">Guardar cambios del artículo</button><div class="foro-article-save-status" aria-live="polite"></div><strong>Elementos del artículo</strong><button type="button" data-article-jump=".article-header h1">Título</button><button type="button" data-article-jump=".article-excerpt">Extracto</button><button type="button" data-article-jump=".article-body">Cuerpo</button><p>Para insertar documentos, imágenes, tablas o cambiar la composición de bloques, usá el editor completo desde Publicaciones.</p></div>`;
+  }
+  function connectVisualArticle(){
+    if(!visualArticle)return;
+    const doc=$('#visualFrame')?.contentDocument;if(!doc)return;
+    const heading=doc.querySelector('.article-header h1'),excerpt=doc.querySelector('.article-header .article-excerpt'),body=doc.querySelector('.article-body');
+    if(!heading||!excerpt||!body)return;
+    [[heading,'title'],[excerpt,'excerpt'],[body,'content_html']].forEach(([el,key])=>{
+      if(el.dataset.visualArticleBound)return;el.dataset.visualArticleBound='1';el.contentEditable='true';el.setAttribute('spellcheck','true');el.classList.add('foro-article-inline-edit');
+      el.addEventListener('input',()=>{
+        if(!articleDraft)return;
+        if(key==='content_html'){const cleaned=el.cloneNode(true);cleaned.querySelectorAll('.references').forEach(node=>node.remove());const excerptFigure=new DOMParser().parseFromString(visualArticle.content_html||'','text/html').querySelector('figure.foro-image-excerpt-right');articleDraft.content_html=cleaned.innerHTML+(excerptFigure?excerptFigure.outerHTML:'');}
+        else if(key==='excerpt')articleDraft.excerpt=el.innerText;
+        else articleDraft.title=el.innerText.trim();
+        const status=document.querySelector('.foro-article-save-status');if(status)status.textContent='Cambios sin guardar';
+      });
+    });
+    if(!doc.getElementById('foro-article-visual-style')){const st=doc.createElement('style');st.id='foro-article-visual-style';st.textContent='.foro-article-inline-edit{outline:2px dashed rgba(0,130,170,.5);outline-offset:5px;cursor:text}.foro-article-inline-edit:focus{outline:3px solid #0099c4;background:rgba(230,248,253,.18)}';doc.head.append(st)}
+    doc.querySelectorAll('.foro-article-inline-edit').forEach(el=>el.addEventListener('focus',()=>el.classList.add('is-editing')));
+  }
+  async function saveVisualArticle(){
+    if(!visualArticle||!articleDraft)return;
+    const status=document.querySelector('.foro-article-save-status');
+    try{
+      if(status)status.textContent='Guardando…';
+      const saved=await db.savePost(articleDraft);
+      posts=posts.map(p=>p.id===saved.id?saved:p);
+      visualArticle=saved;articleDraft=clone(saved);
+      if(status)status.textContent='Artículo guardado. Los cambios se muestran en el sitio publicado.';
+      toast('Artículo actualizado');
+    }catch(error){if(status)status.textContent='No se pudo guardar: '+error.message;toast(error.message)}
+  }
+  function openVisualArticle(post){
+    visualArticle=post;articleDraft=clone(post);
+    builderPage='article';selectedBuilderBlock=-1;
+    $('#visualFrame').src=`../articulo.html?slug=${encodeURIComponent(post.slug)}&cms_live_preview=1&cms_inline_edit=1&t=${Date.now()}`;
+    renderBuilder();
+  }
   function renderVisualSectionTree(){
+    if(builderPage==='article')return articleVisualTree();
     const home=builderPage==='home',foro=builderPage==='el-foro';
     if(home){return `<div class="section-tree"><strong>Secciones de Inicio</strong>${(state.sections||[]).map((x,i)=>`<div class="section-tree-row ${i===activeBuilderSection?'active':''} ${x.enabled===false?'muted':''}" data-tree-i="${i}"><button class="tree-name" data-tree-select="${i}" title="Seleccionar sección">${i+1}. ${esc(x.label||x.type)}</button><button data-tree-op="edit" title="Editar sección">✎</button><button data-tree-op="toggle" title="Mostrar u ocultar">${x.enabled===false?'◉':'◌'}</button><button data-tree-op="up" title="Subir">↑</button><button data-tree-op="down" title="Bajar">↓</button><button data-tree-op="copy" title="Duplicar">⧉</button><button data-tree-op="delete" title="Eliminar">×</button></div>`).join('')}<p class="section-tree-note">Cada sección puede editarse, moverse, duplicarse, ocultarse o eliminarse. Los bloques nuevos se insertan dentro de la sección seleccionada.</p><button type="button" id="treeAddSection">+ Nueva sección</button></div>`}
     if(foro){const d=state.pages?.['el-foro']||{};const ids=['hero','quienes-somos','mision','metodologia','comision'];const labels={hero:'Portada institucional','quienes-somos':'Quiénes somos',mision:'Misión y visión',metodologia:'Metodología',comision:'Comisión promotora'};const order=[...new Set([...(d.layoutOrder||[]),...ids])].filter(id=>ids.includes(id));return `<div class="section-tree"><strong>Secciones de El Foro</strong>${order.map((id,i)=>`<div class="section-tree-row ${d.hiddenSections?.includes(id)?'muted':''}" data-foro-i="${i}" data-foro-id="${id}"><button class="tree-name" data-foro-focus="${id}">${i+1}. ${labels[id]}</button><button data-foro-op="toggle" title="Mostrar u ocultar">${d.hiddenSections?.includes(id)?'◉':'◌'}</button><button data-foro-op="up" title="Subir">↑</button><button data-foro-op="down" title="Bajar">↓</button></div>`).join('')}<p class="section-tree-note">Los bloques institucionales originales pueden ordenarse y ocultarse; sus textos se editan directamente sobre el lienzo o desde Páginas.</p></div>`}
@@ -618,8 +661,14 @@
     host.querySelectorAll('[data-foro-op]').forEach(b=>b.onclick=()=>{const row=b.closest('[data-foro-id]'),id=row.dataset.foroId,op=b.dataset.foroOp;const d=state.pages['el-foro'];d.hiddenSections??=[];let order=[...new Set([...(d.layoutOrder||[]),'hero','quienes-somos','mision','metodologia','comision'])];if(op==='toggle'){d.hiddenSections=d.hiddenSections.includes(id)?d.hiddenSections.filter(x=>x!==id):[...d.hiddenSections,id]}else{const i=order.indexOf(id),j=i+(op==='up'?-1:1);if(j<0||j>=order.length)return;[order[i],order[j]]=[order[j],order[i]];d.layoutOrder=order}builderSync();renderBuilder();renderPages()});
   }
   function renderBuilder(){
+    if(builderPage==='article'){
+      const host=$('#foroBuilder');
+      if(host){host.innerHTML=articleVisualTree();host.querySelector('[data-article-back]')?.addEventListener('click',()=>{visualArticle=null;articleDraft=null;builderPage='conocimiento';$('#visualPage').value='../conocimiento.html';renderBuilder();reloadVisual()});host.querySelector('[data-article-save]')?.addEventListener('click',saveVisualArticle);host.querySelectorAll('[data-article-jump]').forEach(btn=>btn.onclick=()=>$('#visualFrame')?.contentDocument?.querySelector(btn.dataset.articleJump)?.scrollIntoView({behavior:'smooth',block:'center'}));}
+      return;
+    }
+
     const host=$('#foroBuilder');if(!host)return;
-    const isHome=builderPage==='home';const blocks=ensureBuilderBlocks();
+    const isHome=builderPage==='home';const blocks=builderPage==='article'?[]:ensureBuilderBlocks();
     const sections=(state.sections||[]).map((x,i)=>`<option value="${i}" ${i===activeBuilderSection?'selected':''}>${esc(x.name||x.content?.title||x.type||'Sección '+(i+1))}</option>`).join('');
     host.innerHTML=`${renderVisualSectionTree()}<div class="builder-bar"><div><b>Constructor visual · bloques independientes</b><small>Seleccioná una sección, insertá bloques y observá los cambios en el lienzo.</small></div>${isHome?`<select id="builderSection" aria-label="Sección">${sections}</select>`:'<small>Bloques adicionales de la página</small>'}</div><div class="builder-tools">${builderTypes.map(([id,n])=>`<button type="button" data-builder-add="${id}">+ ${n}</button>`).join('')}</div><div class="builder-workspace"><div class="builder-list" id="builderList">${blocks.length?blocks.map((b,i)=>`<button type="button" class="builder-item ${selectedBuilderBlock===i?'selected':''}" data-builder-item="${i}" draggable="true"><span class="builder-handle">⠿</span><span><strong>${esc(builderTypes.find(x=>x[0]===b.type)?.[1]||b.type)}</strong><small>${esc((b.text||b.src||'Sin contenido').slice(0,75))}</small></span><span class="builder-item-actions" data-builder-controls="${i}"><i data-builder-act="up" title="Subir">↑</i><i data-builder-act="down" title="Bajar">↓</i><i data-builder-act="duplicate" title="Duplicar">⧉</i><i data-builder-act="delete" title="Eliminar">×</i></span></button>`).join(''):'<p class="builder-empty">Insertá un bloque para comenzar a diseñar esta sección.</p>'}</div><div class="builder-inspector" id="builderInspector">${selectedBuilderBlock>=0&&blocks[selectedBuilderBlock]?renderBuilderInspector(blocks[selectedBuilderBlock]):'<p>Elegí un bloque para editar sus propiedades.</p>'}</div></div>`;
     wireVisualSectionTree(host);
@@ -677,10 +726,10 @@
   $('#refreshHistory').onclick=loadHistory;
   $('#reloadJson').onclick=()=>{renderAdvanced();toast('JSON recargado desde el estado local')};
   $('#applyJson').onclick=()=>{try{const parsed=JSON.parse($('#advancedJson').value);if(!parsed||typeof parsed!=='object'||Array.isArray(parsed))throw new Error('El JSON debe ser un objeto');state=mergeDeep(clone(defaults),parsed);markDirty();renderAll();pushPreview();toast('JSON válido y aplicado localmente')}catch(e){toast('JSON inválido: '+e.message)}};
-  $('#visualPage').onchange=()=>{const lookup={'../index.html':'home','../el-foro.html':'el-foro','../participa.html':'participa','../conocimiento.html':'conocimiento','../actividades.html':'actividades','../voces.html':'voces','../newsletter.html':'newsletter'};builderPage=lookup[$('#visualPage').value]||'home';selectedBuilderBlock=-1;renderBuilder();reloadVisual()};$('#visualReload').onclick=reloadVisual;$$('[data-device]').forEach(b=>b.onclick=()=>{visualDevice=b.dataset.device;$$('[data-device]').forEach(x=>x.classList.toggle('active',x===b));resizeVisual()});$('#visualFrame').onload=()=>{resizeVisual();setTimeout(pushPreview,120);if(builderPage!=='home'&&builderPage!=='el-foro')setTimeout(renderBuilder,240);
+  $('#visualPage').onchange=()=>{const lookup={'../index.html':'home','../el-foro.html':'el-foro','../participa.html':'participa','../conocimiento.html':'conocimiento','../actividades.html':'actividades','../voces.html':'voces','../newsletter.html':'newsletter'};builderPage=lookup[$('#visualPage').value]||'home';visualArticle=null;articleDraft=null;selectedBuilderBlock=-1;renderBuilder();reloadVisual()};$('#visualReload').onclick=reloadVisual;$$('[data-device]').forEach(b=>b.onclick=()=>{visualDevice=b.dataset.device;$$('[data-device]').forEach(x=>x.classList.toggle('active',x===b));resizeVisual()});$('#visualFrame').onload=()=>{resizeVisual();setTimeout(pushPreview,120);if(builderPage==='article'){setTimeout(connectVisualArticle,700);}else if(builderPage!=='home'&&builderPage!=='el-foro')setTimeout(renderBuilder,240);
     // La selección de un artículo en Conocimiento abre su editor completo sin perder el lienzo.
     try{const documentInFrame=$('#visualFrame').contentDocument;
-      documentInFrame?.addEventListener('click',event=>{const link=event.target.closest('a[href*="articulo.html"]');if(!link)return;const url=new URL(link.href,documentInFrame.location.href);const slug=url.searchParams.get('slug');const post=posts.find(p=>p.slug===slug);if(post){event.preventDefault();openPost(post);}},true);
+      documentInFrame?.addEventListener('click',event=>{const link=event.target.closest('a[href*="articulo.html"]');if(!link)return;const url=new URL(link.href,documentInFrame.location.href);const slug=url.searchParams.get('slug');const post=posts.find(p=>p.slug===slug);if(post){event.preventDefault();openVisualArticle(post);}},true);
     }catch(error){console.warn('No se pudo conectar el editor de artículos al lienzo',error)}
   };
   $('#previewReload').onclick=refreshPreview;$('#previewFrame').onload=()=>setTimeout(pushPreview,100);

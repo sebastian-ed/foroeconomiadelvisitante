@@ -412,3 +412,17 @@ html body .article-body h2,html body .article-body h3,html body .article-body h4
  .article-body figure[data-mobile-order="image-first"]{display:block}
  .article-header .foro-excerpt-row-image{flex:0 0 auto!important}
 }
+
+/* V30 · Orden editorial en celular: primero lectura, luego medios flotantes. */
+@media(max-width:700px){
+ .article-page .article-body{display:flex;flex-direction:column;align-items:stretch}
+ .article-page .article-body > figure.foro-image-right,
+ .article-page .article-body > figure.foro-image-left,
+ .article-page .article-body > figure.foro-image-below{order:2;float:none!important;clear:both;width:100%!important;max-width:100%!important;margin:1.5rem 0!important}
+ .article-page .article-body > figure[data-mobile-order="image-first"]{order:-1}
+ .article-page .article-body > .foro-document,.article-page .article-body > .references{order:3}
+ .article-page .article-header .foro-excerpt-row{display:flex!important;flex-direction:column!important}
+ .article-page .article-header .foro-excerpt-row > .article-excerpt{order:0!important}
+ .article-page .article-header .foro-excerpt-row > .foro-excerpt-row-image{order:2!important}
+ .article-page .article-header .foro-excerpt-row[data-mobile-order="image-first"] > .foro-excerpt-row-image{order:-1!important}
+}

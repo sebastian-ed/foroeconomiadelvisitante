@@ -202,3 +202,6 @@ dialog.foro-nested-dialog .foro-media-picker-dialog{max-height:min(90dvh,900px);
 @media(max-width:700px){.foro-excerpt-editor-grid{grid-template-columns:1fr}}
 
 .foro-scale-control{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:#063e76}.foro-scale-control input{width:65px;padding:8px;background:white;color:#052b4a;border:1px solid #bacddd;border-radius:4px}.foro-context-bar [data-image-mobile]{max-width:196px}.foro-excerpt-editor input[type=range]{width:100%;accent-color:#063e76}.foro-excerpt-editor output{font-weight:700;color:#063e76}
+
+/* V30 edición directamente sobre la previsualización */
+.foro-article-tree{display:grid;gap:12px}.foro-article-tree button{min-height:36px;text-align:left}.foro-article-save-status{font-size:12px;color:#07577a;min-height:20px}
