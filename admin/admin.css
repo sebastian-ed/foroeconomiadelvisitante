@@ -220,3 +220,17 @@ dialog.foro-nested-dialog .foro-media-picker-dialog{max-height:min(90dvh,900px);
 
 .foro-bio-editor .foro-bio-input{font-family:inherit;font-size:16px;}
 .foro-bio-editor .foro-bio-toolbar button:hover{background:#e1f4fc;}
+
+/* V34.1 - campo de biografía siempre visible y editable */
+.foro-bio-editor .foro-bio-input[contenteditable="true"]{
+ display:block!important;box-sizing:border-box;width:100%;min-width:0;min-height:180px;
+ padding:16px 18px!important;margin:12px 0 14px!important;
+ background:#ffffff!important;color:#082d4c!important;border:1.5px solid #a9c0d1!important;
+ border-radius:7px!important;font:normal 16px/1.65 'DM Sans',Arial,sans-serif;
+ white-space:pre-wrap;overflow-wrap:anywhere;cursor:text;outline:none;
+}
+.foro-bio-editor .foro-bio-input[contenteditable="true"]:focus{border-color:#007da7!important;outline:3px solid rgba(0,138,181,.17)!important;}
+.foro-bio-editor .foro-bio-input[contenteditable="true"]:empty::before{content:attr(data-placeholder);color:#718697!important;pointer-events:none;}
+.foro-bio-editor .foro-bio-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:12px 0;}
+.foro-bio-editor .foro-bio-toolbar button,.foro-bio-editor .foro-bio-toolbar select{background:#f6fbff;color:#072c4b;border:1px solid #b5cbd9;border-radius:5px;min-height:36px;padding:6px 11px;cursor:pointer;font-size:13px;}
+.foro-bio-editor .foro-bio-toolbar button:focus-visible{outline:2px solid #007da7;}
