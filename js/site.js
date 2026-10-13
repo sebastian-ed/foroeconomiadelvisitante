@@ -471,7 +471,7 @@
         const row=document.createElement('div');row.className='foro-excerpt-row';
         const imgWrap=document.createElement('div');imgWrap.className='foro-excerpt-row-image';
         imgWrap.append(excerptPhoto);
-        const percentage=Math.min(48,Math.max(30,Number(excerptPhoto.dataset.excerptWidth)||35));
+        const percentage=Math.min(100,Math.max(0,Number(excerptPhoto.dataset.excerptWidth) ?? 35));
         row.style.setProperty('--excerpt-photo-width',percentage+'%');
         row.dataset.mobileOrder=excerptPhoto.dataset.mobileOrder||'text-first';
         excerpt.before(row);row.append(excerpt,imgWrap);

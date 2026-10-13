@@ -401,3 +401,14 @@ html body .article-body h2,html body .article-body h3,html body .article-body h4
 .article-header .foro-excerpt-row-image figure.foro-image-excerpt-right{float:none!important;max-width:none!important;width:100%!important;margin:0!important}
 .article-header .foro-excerpt-row-image figure img{display:block;width:100%;height:auto;max-height:610px;object-fit:cover;border-radius:8px}
 @media(max-width:700px){.article-header .foro-excerpt-row{flex-direction:column;gap:20px}.article-header .foro-excerpt-row-image{width:100%;flex:auto;order:2}.article-header .foro-excerpt-row[data-mobile-order="image-first"] .foro-excerpt-row-image{order:-1}}
+
+/* V29 — control individual y responsive de medios editoriales */
+.article-body figure:has(> img)[data-image-scale]{--scale:var(--image-scale,100%);}
+.article-body figure:has(> img)[data-image-scale] img{width:var(--image-scale,100%);max-width:100%;height:auto;margin-inline:auto;display:block}
+.article-header .foro-excerpt-row-image{max-width:100%}
+.article-header .foro-excerpt-row-image figure img{object-fit:contain}
+@media(max-width:700px){
+ .article-body figure.foro-image-right:has(img),.article-body figure.foro-image-left:has(img){float:none!important;width:100%!important;max-width:100%!important;clear:both;margin:1.25rem 0!important}
+ .article-body figure[data-mobile-order="image-first"]{display:block}
+ .article-header .foro-excerpt-row-image{flex:0 0 auto!important}
+}
