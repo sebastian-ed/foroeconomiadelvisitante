@@ -205,3 +205,13 @@ dialog.foro-nested-dialog .foro-media-picker-dialog{max-height:min(90dvh,900px);
 
 /* V30 edición directamente sobre la previsualización */
 .foro-article-tree{display:grid;gap:12px}.foro-article-tree button{min-height:36px;text-align:left}.foro-article-save-status{font-size:12px;color:#07577a;min-height:20px}
+
+/* V31 · Guardado confiable / inspector de bloques */
+.foro-post-save-feedback{background:#fff1ee;color:#872a20;border:1px solid #e8aea3;padding:14px 18px;border-radius:6px;font-size:14px;line-height:1.5;margin-bottom:14px;white-space:pre-wrap;overflow-wrap:anywhere}
+.foro-post-save-feedback[hidden]{display:none!important}
+.foro-audiovisual-hint{margin:10px 0 0;font-size:13px;color:#345c75}
+.foro-template-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;align-items:start}
+@media(max-width:700px){.foro-template-columns{grid-template-columns:minmax(0,1fr)!important}}
+.foro-context-bar [data-block-columns]{min-width:130px}
+
+.foro-visual-tools{display:grid;gap:10px;margin-top:16px;border-top:1px solid #cbdbe6;padding-top:18px}.foro-visual-tools label{font-size:12px;font-weight:600;color:#153a56;display:grid;gap:4px}.foro-visual-tools select,.foro-visual-tools input{width:100%;background:white;color:#082d49;border:1px solid #abc3d3;padding:9px;border-radius:4px}.foro-visual-action-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.foro-visual-action-grid button{border:1px solid #b8ccd8;background:#f5fbfe;color:#073b68;padding:10px 6px;cursor:pointer;border-radius:4px}.foro-visual-action-grid button:hover{background:#dff2fb}

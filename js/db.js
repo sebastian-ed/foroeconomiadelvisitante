@@ -77,7 +77,16 @@
       if (!client) throw new Error('Supabase no está configurado');
       const userId = await currentUserId();
       const payload = cleanRecord({ ...post, updated_by:userId, ...(!post.id?{created_by:userId}:{}) });
-      const { data, error } = await client.from('posts').upsert(payload,{onConflict:'slug'}).select().single();
+      // Un registro existente se actualiza por id. Evita conflictos de slug y claves primarias
+      // provocados por upserts sobre otro índice único.
+      let query;
+      if (post.id) {
+        const { id, created_at, created_by, ...patch } = payload;
+        query = client.from('posts').update(patch).eq('id',id).select().single();
+      } else {
+        query = client.from('posts').insert(payload).select().single();
+      }
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },

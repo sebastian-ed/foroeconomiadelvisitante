@@ -126,6 +126,7 @@
   };
   function addEditorialTemplates(root){
     const editor=root.querySelector('[data-rich-editor]');if(!editor)return;
+    // La plantilla audiovisual debe ofrecer el reproductor real, no solo un texto marcador.
     const box=document.createElement('div');box.className='editorial-template-picker';
     box.innerHTML=`<div><strong>Plantillas prediseñadas</strong><p>Elegí una estructura profesional; los textos se reemplazan y editan normalmente. Previsualizá antes de insertar.</p></div><div class="template-choice-grid">${Object.entries(editorialTemplates).map(([name,markup],i)=>`<button type="button" data-editor-template="${i}"><strong>${esc(name)}</strong><small>${i===3?'Imagen y texto':i===5?'Composición editorial':'Contenido editable'}</small></button>`).join('')}</div><div class="template-example" id="templateExample" hidden></div><div class="template-choice-actions"><button type="button" id="insertTemplate" class="btn primary" disabled>Usar plantilla</button><button type="button" id="appendTemplate" class="btn ghost" disabled>Agregar al contenido</button></div>`;
     editor.parentElement.insertBefore(box,editor);
@@ -133,6 +134,9 @@
     box.querySelectorAll('[data-editor-template]').forEach(b=>b.onclick=()=>{active=+b.dataset.editorTemplate;box.querySelectorAll('[data-editor-template]').forEach(x=>x.classList.toggle('selected',x===b));const prev=box.querySelector('#templateExample');prev.hidden=false;prev.innerHTML=templates[active];box.querySelector('#insertTemplate').disabled=false;box.querySelector('#appendTemplate').disabled=false});
     box.querySelector('#insertTemplate').onclick=()=>{if(active===null)return;if(editor.textContent.trim()&&!confirm('¿Reemplazar el contenido del editor con esta plantilla?'))return;editor.innerHTML=templates[active];editor.dispatchEvent(new Event('input',{bubbles:true}))};
     box.querySelector('#appendTemplate').onclick=()=>{if(active===null)return;editor.insertAdjacentHTML('beforeend',templates[active]);editor.dispatchEvent(new Event('input',{bubbles:true}))};
+    const audiovisualIndex=Object.keys(editorialTemplates).indexOf('Bloque audiovisual');
+    const hint=document.createElement('p');hint.className='foro-audiovisual-hint';hint.textContent='Para incorporar el video real, elegí «YouTube» o «Video propio» en Agregar bloque. Se abrirá un selector con vista previa.';box.append(hint);
+
   }
   function openSectionEditor(i){
     if(!state.sections?.[i]) return;
@@ -287,7 +291,19 @@
     return `<div class="rich-toolbar" data-rich-toolbar><button type="button" data-cmd="bold"><b>B</b></button><button type="button" data-cmd="italic"><i>I</i></button><button type="button" data-cmd="formatBlock" data-val="h2">H2</button><button type="button" data-cmd="formatBlock" data-val="h3">H3</button><button type="button" data-cmd="formatBlock" data-val="p">P</button><button type="button" data-cmd="insertUnorderedList">• Lista</button><button type="button" data-cmd="insertOrderedList">1. Lista</button><button type="button" data-cmd="formatBlock" data-val="blockquote">❝</button><button type="button" data-cmd="createLink">Link</button><button type="button" data-cmd="removeFormat">Limpiar</button></div><div class="block-add-bar"><span>Agregar bloque</span><button type="button" data-add-rich="h2">Título</button><button type="button" data-add-rich="h3">Subtítulo</button><button type="button" data-add-rich="p">Párrafo</button><button type="button" data-add-rich="image">Imagen</button><button type="button" data-add-rich="youtube">YouTube</button><button type="button" data-add-rich="video">Video propio</button><button type="button" data-add-rich="document">PDF / Word / Excel</button><button type="button" data-add-rich="map">Mapa</button><button type="button" data-add-rich="blockquote">Cita</button><button type="button" data-add-rich="hr">Separador</button><button type="button" data-add-rich="ul">Lista</button></div><div class="foro-layout-help"><strong>Composición de imágenes</strong><span>Seleccioná la imagen en el cuerpo y elegí ubicación y tamaño en la barra. Para un carrusel inferior, elegí «Carrusel inferior» en dos o más imágenes consecutivas. Podés combinar una imagen lateral con otras abajo.</span></div><div class="rich-editor" contenteditable="true" data-rich-editor aria-label="Editor de bloques">${content||''}</div>`;
   }
   function richYouTubeId(value=''){
-    try {const u=new URL(value);if(u.hostname==='youtu.be')return /^[\w-]{11}$/.test(u.pathname.slice(1))?u.pathname.slice(1):'';if(/(^|\.)youtube(?:-nocookie)?\.com$/.test(u.hostname)){const id=u.searchParams.get('v')||u.pathname.split('/').filter(Boolean).pop();return /^[\w-]{11}$/.test(id)?id:'';}}catch{}return '';
+    const raw=String(value||'').trim();
+    if(/^[\w-]{11}$/.test(raw))return raw;
+    try {
+      const u=new URL(raw.startsWith('//')?'https:'+raw:raw);
+      const host=u.hostname.toLowerCase().replace(/^www\./,'');
+      let id='';
+      if(host==='youtu.be')id=u.pathname.split('/').filter(Boolean)[0]||'';
+      else if(host==='youtube.com'||host==='m.youtube.com'||host==='music.youtube.com'||host==='youtube-nocookie.com'){
+        id=u.searchParams.get('v')||'';
+        if(!id){const bits=u.pathname.split('/').filter(Boolean);if(['embed','shorts','live','v'].includes(bits[0]))id=bits[1]||'';}
+      }
+      return /^[\w-]{11}$/.test(id)?id:'';
+    }catch{return ''}
   }
   // Editor de bloques: estructura conservada como HTML para compatibilidad con el CMS anterior.
   function enhanceBlockEditor(root,ed) {
@@ -296,8 +312,17 @@
     const familyNames=[...new Set([state.theme?.headingFont,state.theme?.subtitleFont,state.theme?.bodyFont,'Instrument Serif','DM Sans','Inter','Lora','Playfair Display','Cormorant Garamond','Libre Baskerville','Montserrat','Manrope','Georgia','Arial'].filter(Boolean))];
     const bar=document.createElement('div');bar.className='foro-context-bar';
     bar.innerHTML=`<span class="foro-block-label">Seleccioná un bloque</span><select data-block-font aria-label="Tipografía"><option value="">Fuente global</option>${familyNames.map(f=>`<option value="${esc(f)}">${esc(f)}</option>`).join('')}</select><select data-block-size aria-label="Tamaño"><option value="">Tamaño</option>${[14,16,18,20,24,28,32,40,48,56,64,80].map(v=>`<option value="${v}px">${v}px</option>`).join('')}</select><select data-block-leading aria-label="Interlineado">${['1','1.2','1.4','1.6','1.8','2'].map(v=>`<option value="${v}">${v} interlínea</option>`).join('')}</select><button data-block-action="bold" title="Negrita"><b>B</b></button><button data-block-action="italic" title="Cursiva"><i>I</i></button><button data-block-action="left" title="Izquierda">⇤</button><button data-block-action="center" title="Centrar">≡</button><button data-block-action="right" title="Derecha">⇥</button><button data-block-action="undo" title="Deshacer (Ctrl+Z)">↶</button><button data-block-action="redo" title="Rehacer (Ctrl+Y / Ctrl+Shift+Z)">↷</button><select data-image-placement title="Ubicación de imagen"><option value="">Posición de imagen</option><option value="foro-image-right">Al lado del texto · derecha</option><option value="foro-image-excerpt-right">Junto al extracto · derecha</option><option value="foro-image-left">Al lado del texto · izquierda</option><option value="foro-image-below">Debajo · independiente</option><option value="foro-gallery-item">Carrusel inferior · agrupar</option></select><select data-image-size title="Ancho de imagen"><option value="">Imagen: tamaño</option><option value="foro-media-small">Compacta</option><option value="foro-media-medium">Mediana</option><option value="foro-media-wide">Ancho completo</option></select><label class="foro-scale-control">Escala <input type="number" min="0" max="100" step="1" value="100" data-image-scale aria-label="Escala de imagen en porcentaje">%</label><select data-image-mobile title="Orden en celular"><option value="text-first">Móvil: texto primero</option><option value="image-first">Móvil: imagen primero</option></select><button data-block-action="document-title" title="Mostrar título del documento">Título documento</button><button data-block-action="document-caption" title="Mostrar descripción del documento">Descripción</button><button data-block-action="move-up" title="Mover bloque hacia arriba">↑</button><button data-block-action="move-down" title="Mover bloque hacia abajo">↓</button><button data-block-action="duplicate" title="Duplicar">⧉</button><button data-block-action="delete" title="Eliminar">×</button>`;
-    bar.insertAdjacentHTML('beforeend','<span class="foro-select-count" data-select-count>0 seleccionados</span><button type="button" data-bulk-action="up" title="Subir selección">↑ Grupo</button><button type="button" data-bulk-action="down" title="Bajar selección">↓ Grupo</button><button type="button" data-bulk-action="delete" title="Eliminar selección">Eliminar selección</button>');
+    bar.insertAdjacentHTML('beforeend','<select data-block-columns title="Distribución de columnas"><option value="">Columnas</option><option value="50/50">2 columnas · mitad</option><option value="65/35">2 columnas · 65/35</option><option value="35/65">2 columnas · 35/65</option><option value="100">1 columna</option></select><span class="foro-select-count" data-select-count>0 seleccionados</span><button type="button" data-bulk-action="up" title="Subir selección">↑ Grupo</button><button type="button" data-bulk-action="down" title="Bajar selección">↓ Grupo</button><button type="button" data-bulk-action="delete" title="Eliminar selección">Eliminar selección</button>');
     shell.insertBefore(bar,ed);
+    bar.querySelector('[data-block-columns]').addEventListener('change',event=>{
+      const container=ed.querySelector('.foro-template-columns');
+      if(!container){toast('Para ajustar columnas, aplicá primero la plantilla «Dos columnas».');return;}
+      const mode=event.target.value;
+      container.dataset.columns=mode;
+      container.style.gridTemplateColumns=mode==='65/35'?'minmax(0, 1.86fr) minmax(0, 1fr)':mode==='35/65'?'minmax(0, 1fr) minmax(0, 1.86fr)':mode==='100'?'minmax(0, 1fr)':'repeat(2, minmax(0, 1fr))';
+      ed.dispatchEvent(new Event('input',{bubbles:true}));
+    });
+
     let active=null;
     const selected=new Set();
     const syncSelection=()=>{selected.forEach(el=>{if(!ed.contains(el))selected.delete(el)});ed.querySelectorAll('.foro-edit-block').forEach(el=>el.classList.toggle('foro-multi-selected',selected.has(el)));const count=bar.querySelector('[data-select-count]');if(count)count.textContent=selected.size+' seleccionados'};
@@ -421,7 +446,7 @@
           }else if(type==='youtube'){
             const id=richYouTubeId(raw);if(!id){toast('Enlace de YouTube inválido');return;}
             element.className='rich-media rich-youtube';element.dataset.youtube=id;
-            element.innerHTML=`<iframe src="https://www.youtube-nocookie.com/embed/${id}?rel=0&controls=1" title="Video de YouTube" loading="lazy" allow="encrypted-media; picture-in-picture" allowfullscreen></iframe><figcaption contenteditable="true">Video de YouTube</figcaption>`;
+            element.innerHTML=`<iframe src="https://www.youtube-nocookie.com/embed/${id}?rel=0&controls=1" title="Video de YouTube" loading="lazy" allow="encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
           }else{
             element.className='rich-media';const media=document.createElement(type==='image'?'img':'video');media.src=raw;
             if(type==='video'){media.controls=true;media.playsInline=true;media.preload='metadata'}else media.alt='Imagen del artículo';
@@ -451,6 +476,8 @@
     const excerptPhotoUrl=storedExcerptPhoto?.getAttribute('src')||'';
     const bodyWithoutExcerpt=(p.content_html||'').replace(/<figure\b(?=[^>]*\bforo-image-excerpt-right\b)[^>]*>[\s\S]*?<\/figure>/gi,'');
     $('#postEditorBody').innerHTML=`<div class="dialog-grid"><div class="editor-main"><div class="editor-card"><h3>Contenido</h3><div class="form-stack"><label class="field"><span>Título</span><input id="peTitle" value="${esc(p.title)}"></label><label class="field"><span>Extracto</span><textarea id="peExcerpt">${esc(p.excerpt||'')}</textarea></label><label class="field"><span>Cuerpo</span>${richEditorHtml(bodyWithoutExcerpt)}</label></div></div><div class="editor-card"><h3>SEO</h3><div class="form-stack"><label class="field"><span>Título SEO</span><input id="peSeoTitle" value="${esc(p.seo_title||'')}"></label><label class="field"><span>Descripción SEO</span><textarea id="peSeoDesc">${esc(p.seo_description||'')}</textarea></label></div></div></div><aside class="editor-side"><div class="editor-card"><h3>Publicación</h3><div class="form-stack"><label class="field"><span>Estado</span><select id="peStatus"><option value="draft" ${p.status==='draft'?'selected':''}>Borrador</option><option value="published" ${p.status==='published'?'selected':''}>Publicado</option><option value="scheduled" ${p.status==='scheduled'?'selected':''}>Programado</option><option value="archived" ${p.status==='archived'?'selected':''}>Archivado</option></select></label><label class="field"><span>Fecha de publicación</span><input id="peDate" type="datetime-local" value="${esc((p.published_at||'').slice(0,16))}"></label><label class="field check-field"><input id="peFeatured" type="checkbox" ${p.featured?'checked':''}><span>Destacada</span></label></div></div><div class="editor-card"><h3>Organización</h3><div class="form-stack"><label class="field"><span>Tipo</span><select id="peType">${Object.entries(postTypes).map(([k,v])=>`<option value="${k}" ${p.type===k?'selected':''}>${v}</option>`).join('')}</select></label><label class="field"><span>Categoría</span><input id="peCategory" value="${esc(p.category||'')}"></label><label class="field"><span>Etiquetas (separadas por coma)</span><input id="peTags" value="${esc((p.tags||[]).join(', '))}"></label><label class="field"><span>Slug</span><input id="peSlug" value="${esc(p.slug||'')}"></label></div></div><div class="editor-card"><h3>Autoría</h3><div class="form-stack"><label class="field"><span>Nombre del autor (firma pública)</span><input id="peAuthor" value="${esc(p.author_name||'')}"></label><label class="field"><span>Profesión / organización (opcional)</span><input id="peRole" value="${esc(p.author_role||'')}"></label><small>Podés indicar cualquier autor, aunque todavía no tenga cuenta para ingresar al CMS.</small></div></div><div class="editor-card"><h3>Imagen destacada del listado</h3><small>Se muestra en las tarjetas de Conocimiento. Para incluir una imagen dentro del artículo, usá el bloque Imagen en el cuerpo.</small><div class="form-stack"><label class="field"><span>URL o medio</span><input id="peImage" type="url" placeholder="URL de imagen" value="${esc(p.featured_image||'')}"></label><div class="foro-featured-preview" id="peImagePreview"></div><div class="foro-featured-actions"><button type="button" class="btn ghost" id="peChooseImage">Elegir o subir imagen</button><button type="button" class="btn ghost" id="peClearImage">Quitar imagen</button></div></div></div><div class="editor-card"><h3>Fuentes / referencias</h3><label class="field"><span>Una por línea</span><textarea id="peReferences">${esc((p.references||[]).join('\n'))}</textarea></label></div></aside></div>`;
+    let saveFeedback=document.getElementById('postSaveFeedback');
+    if(!saveFeedback){saveFeedback=document.createElement('div');saveFeedback.id='postSaveFeedback';saveFeedback.className='foro-post-save-feedback';saveFeedback.setAttribute('role','alert');saveFeedback.hidden=true;document.querySelector('#postEditorBody .editor-main')?.prepend(saveFeedback);}
     const excerptPanel=document.createElement('div');
     excerptPanel.className='editor-card foro-excerpt-editor';
     excerptPanel.innerHTML=`<h3>Imagen junto al extracto</h3><p>Opcional e independiente de la imagen destacada y del cuerpo. La previsualización utiliza la misma disposición que el artículo.</p><div class="foro-excerpt-editor-grid"><div><label class="field"><span>Imagen</span><input type="url" id="peExcerptImage" placeholder="Elegir una imagen" value="${esc(excerptPhotoUrl)}"></label><div class="foro-featured-actions"><button class="btn ghost" type="button" id="peExcerptChoose">Elegir o subir imagen</button><button class="btn ghost" type="button" id="peExcerptClear">Quitar</button></div><label class="field"><span>Ancho en escritorio</span><input id="peExcerptWidth" type="range" min="0" max="100" step="1" value="35"><output id="peExcerptWidthLabel">35 %</output></label><label class="field"><span>En celulares</span><select id="peExcerptMobile"><option value="text-first">Primero texto y luego foto</option><option value="image-first">Primero foto y luego texto</option></select></label></div><div class="foro-excerpt-media-preview" id="peExcerptImagePreview">Sin imagen para el extracto</div></div>`;
@@ -504,9 +531,33 @@
   }
   function wirePostPreview(){const root=$('#postEditorBody');const panel=document.createElement('div');panel.className='editor-card post-preview-card';panel.innerHTML='<h3>Vista previa del artículo (sin publicar)</h3><p>Se actualiza mientras escribís. No guarda ni modifica el sitio público.</p><iframe id="postLivePreview" title="Previsualización de artículo" sandbox="allow-same-origin"></iframe>';$('.editor-main',root).appendChild(panel);root.addEventListener('input',renderLivePostPreview);root.addEventListener('change',renderLivePostPreview)}
 
+  let savingPost=false;
   async function savePost(){
-    const p=editingPost;const ed=$('[data-rich-editor]',$('#postEditorBody'));Object.assign(p,{title:$('#peTitle').value.trim(),slug:$('#peSlug').value.trim()||slugify($('#peTitle').value),excerpt:$('#peExcerpt').value.trim(),content_html:cleanEditorHtml(ed)+(($('#peExcerptImage')?.value||'').trim()?`<figure class="foro-image-excerpt-right" data-excerpt-width="${$('#peExcerptWidth').value}" data-mobile-order="${$('#peExcerptMobile').value}"><img src="${esc($('#peExcerptImage').value.trim())}" alt="Imagen del extracto"></figure>`:''),type:$('#peType').value,category:$('#peCategory').value.trim(),tags:$('#peTags').value.split(',').map(x=>x.trim()).filter(Boolean),author_name:$('#peAuthor').value.trim(),author_role:$('#peRole').value.trim(),status:myRole==='author'?'draft':$('#peStatus').value,published_at:$('#peDate').value?new Date($('#peDate').value).toISOString():null,featured:$('#peFeatured').checked,featured_image:$('#peImage').value.trim(),references:$('#peReferences').value.split('\n').map(x=>x.trim()).filter(Boolean),seo_title:$('#peSeoTitle').value.trim(),seo_description:$('#peSeoDesc').value.trim()});
-    if(!p.title||!p.slug){toast('Título y slug son obligatorios');return}try{const saved=await db.savePost(p);toast('Publicación guardada');$('#postDialog').close();editingPost=null;await loadPosts()}catch(e){toast('Error: '+e.message)}
+    if(savingPost)return;
+    const p=editingPost, root=$('#postEditorBody'), ed=$('[data-rich-editor]',root);
+    if(!p||!root||!ed)return;
+    const errorNode=document.getElementById('postSaveFeedback');
+    if(errorNode){errorNode.hidden=true;errorNode.textContent='';}
+    const value=id=>document.getElementById(id)?.value||'';
+    const headline=value('peTitle').trim();
+    const slug=value('peSlug').trim()||slugify(headline);
+    if(!headline||!slug){if(errorNode){errorNode.textContent='Ingresá título y URL (slug).';errorNode.hidden=false;}return;}
+    let iso=null;
+    try{iso=value('peDate')?new Date(value('peDate')).toISOString():null}
+    catch{if(errorNode){errorNode.textContent='La fecha de publicación no es válida.';errorNode.hidden=false;}return;}
+    Object.assign(p,{title:headline,slug,excerpt:value('peExcerpt').trim(),content_html:cleanEditorHtml(ed)+(value('peExcerptImage').trim()?`<figure class="foro-image-excerpt-right" data-excerpt-width="${value('peExcerptWidth')}" data-mobile-order="${value('peExcerptMobile')}"><img src="${esc(value('peExcerptImage').trim())}" alt="Imagen del extracto"></figure>`:''),type:value('peType'),category:value('peCategory').trim(),tags:value('peTags').split(',').map(x=>x.trim()).filter(Boolean),author_name:value('peAuthor').trim(),author_role:value('peRole').trim(),status:myRole==='author'?'draft':value('peStatus'),published_at:iso,featured:document.getElementById('peFeatured')?.checked||false,featured_image:value('peImage').trim(),references:value('peReferences').split('\n').map(x=>x.trim()).filter(Boolean),seo_title:value('peSeoTitle').trim(),seo_description:value('peSeoDesc').trim()});
+    const btn=$('#savePost');savingPost=true;btn.disabled=true;btn.textContent='Guardando…';
+    try{
+      const saved=await db.savePost(p);
+      toast('Publicación guardada');$('#postDialog').close();editingPost=null;
+      posts=posts.some(x=>x.id===saved.id)?posts.map(x=>x.id===saved.id?saved:x):[saved,...posts];
+      renderPosts();renderDashboard();pushPreview();
+    }catch(e){
+      const reason=[e.message,e.details,e.hint].filter(Boolean).join(' · ');
+      const text='No se pudo guardar la publicación: '+reason;
+      if(errorNode){errorNode.textContent=text;errorNode.hidden=false;errorNode.scrollIntoView({block:'nearest'});}
+      toast(text);console.error('Error guardando publicación:',e);
+    }finally{savingPost=false;btn.disabled=false;btn.textContent='Guardar publicación'}
   }
 
   async function loadEvents(){try{events=await db.listEvents({admin:true,limit:500})||[];renderEvents();renderDashboard()}catch(e){toast('Error cargando actividades: '+e.message)}}
@@ -591,8 +642,9 @@
   function builderSync(){markDirty();pushPreview()}
   function articleVisualTree(){
     if(!visualArticle)return '';
-    return `<div class="section-tree foro-article-tree"><strong>Artículo · edición visual</strong><p>Seleccioná el título, extracto o cuerpo directamente en la página de la derecha. Enter crea párrafos. Podés guardar sin salir del lienzo.</p><button type="button" data-article-back>← Volver a Conocimiento</button><button type="button" data-article-save class="btn primary">Guardar cambios del artículo</button><div class="foro-article-save-status" aria-live="polite"></div><strong>Elementos del artículo</strong><button type="button" data-article-jump=".article-header h1">Título</button><button type="button" data-article-jump=".article-excerpt">Extracto</button><button type="button" data-article-jump=".article-body">Cuerpo</button><p>Para insertar documentos, imágenes, tablas o cambiar la composición de bloques, usá el editor completo desde Publicaciones.</p></div>`;
+    return `<div class="section-tree foro-article-tree"><strong>Artículo · edición visual</strong><p>Seleccioná el título, extracto o cuerpo directamente en la página de la derecha. Enter crea párrafos. Podés guardar sin salir del lienzo.</p><button type="button" data-article-back>← Volver a Conocimiento</button><button type="button" data-article-save class="btn primary">Guardar cambios del artículo</button><div class="foro-article-save-status" aria-live="polite"></div><strong>Elementos del artículo</strong><button type="button" data-article-jump=".article-header h1">Título</button><button type="button" data-article-jump=".article-excerpt">Extracto</button><button type="button" data-article-jump=".article-body">Cuerpo</button><div class="foro-visual-tools"><strong>Editar composición</strong><label>Bloque seleccionado<select data-article-structure><option value="p">Párrafo</option><option value="h2">Título</option><option value="h3">Subtítulo</option><option value="blockquote">Cita</option></select></label><label>Fuente<select data-article-font><option value="">Fuente del sitio</option><option>Instrument Serif</option><option>DM Sans</option><option>Inter</option><option>Georgia</option><option>Arial</option><option>Lora</option><option>Libre Baskerville</option></select></label><label>Tamaño de letra (px)<input data-article-size type="number" min="12" max="112" step="1" value="18"></label><label>Interlineado<select data-article-leading><option value="1.3">1.3</option><option value="1.5">1.5</option><option value="1.7" selected>1.7</option><option value="2">2</option></select></label><label>Alineación<select data-article-align><option value="left">Izquierda</option><option value="center">Centrada</option><option value="right">Derecha</option><option value="justify">Justificada</option></select></label><div class="foro-visual-action-grid"><button type="button" data-article-add="p">+ Párrafo</button><button type="button" data-article-add="h2">+ Título</button><button type="button" data-article-add="image">+ Imagen</button><button type="button" data-article-add="youtube">+ YouTube</button><button type="button" data-article-add="columns">+ Dos columnas</button><button type="button" data-article-block-up>↑ Bloque</button><button type="button" data-article-block-down>↓ Bloque</button><button type="button" data-article-block-delete>Eliminar bloque</button></div><small>Seleccioná un bloque dentro del artículo para ajustar sus propiedades. Guardá los cambios al finalizar.</small></div></div>`;
   }
+  let activeVisualArticleBlock=null;
   function connectVisualArticle(){
     if(!visualArticle)return;
     const doc=$('#visualFrame')?.contentDocument;if(!doc)return;
@@ -602,7 +654,7 @@
       if(el.dataset.visualArticleBound)return;el.dataset.visualArticleBound='1';el.contentEditable='true';el.setAttribute('spellcheck','true');el.classList.add('foro-article-inline-edit');
       el.addEventListener('input',()=>{
         if(!articleDraft)return;
-        if(key==='content_html'){const cleaned=el.cloneNode(true);cleaned.querySelectorAll('.references').forEach(node=>node.remove());const excerptFigure=new DOMParser().parseFromString(visualArticle.content_html||'','text/html').querySelector('figure.foro-image-excerpt-right');articleDraft.content_html=cleaned.innerHTML+(excerptFigure?excerptFigure.outerHTML:'');}
+        if(key==='content_html'){const cleaned=el.cloneNode(true);cleaned.querySelectorAll('.references').forEach(node=>node.remove());cleaned.querySelectorAll('.foro-visual-block-active').forEach(node=>node.classList.remove('foro-visual-block-active'));cleaned.removeAttribute('contenteditable');cleaned.removeAttribute('data-visual-article-bound');const excerptFigure=new DOMParser().parseFromString(visualArticle.content_html||'','text/html').querySelector('figure.foro-image-excerpt-right');articleDraft.content_html=cleaned.innerHTML+(excerptFigure?excerptFigure.outerHTML:'');}
         else if(key==='excerpt')articleDraft.excerpt=el.innerText;
         else articleDraft.title=el.innerText.trim();
         const status=document.querySelector('.foro-article-save-status');if(status)status.textContent='Cambios sin guardar';
@@ -610,6 +662,19 @@
     });
     if(!doc.getElementById('foro-article-visual-style')){const st=doc.createElement('style');st.id='foro-article-visual-style';st.textContent='.foro-article-inline-edit{outline:2px dashed rgba(0,130,170,.5);outline-offset:5px;cursor:text}.foro-article-inline-edit:focus{outline:3px solid #0099c4;background:rgba(230,248,253,.18)}';doc.head.append(st)}
     doc.querySelectorAll('.foro-article-inline-edit').forEach(el=>el.addEventListener('focus',()=>el.classList.add('is-editing')));
+    body.addEventListener('click',event=>{
+      const block=event.target.closest('p,h2,h3,blockquote,figure,.foro-template-columns');
+      if(!block||!body.contains(block))return;
+      if(activeVisualArticleBlock)activeVisualArticleBlock.classList.remove('foro-visual-block-active');
+      activeVisualArticleBlock=block;block.classList.add('foro-visual-block-active');
+      const root=document.querySelector('.foro-article-tree');
+      const size=root?.querySelector('[data-article-size]');if(size){size.value=Math.round(parseFloat(doc.defaultView.getComputedStyle(block).fontSize))||18;}
+      const f=root?.querySelector('[data-article-font]');if(f)f.value=['Instrument Serif','DM Sans','Inter','Georgia','Arial','Lora','Libre Baskerville'].find(x=>block.style.fontFamily.includes(x))||'';
+      const a=root?.querySelector('[data-article-align]');if(a)a.value=block.style.textAlign||'left';
+      const st=root?.querySelector('[data-article-structure]');if(st&&['P','H2','H3','BLOCKQUOTE'].includes(block.tagName))st.value=block.tagName.toLowerCase();
+    });
+    if(!doc.getElementById('foro-visual-block-outline')){const st=doc.createElement('style');st.id='foro-visual-block-outline';st.textContent='.foro-visual-block-active{outline:2px solid #00a3cf!important;outline-offset:4px}.foro-template-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2rem}@media(max-width:700px){.foro-template-columns{grid-template-columns:1fr!important}}';doc.head.append(st)}
+
   }
   async function saveVisualArticle(){
     if(!visualArticle||!articleDraft)return;
@@ -624,7 +689,7 @@
     }catch(error){if(status)status.textContent='No se pudo guardar: '+error.message;toast(error.message)}
   }
   function openVisualArticle(post){
-    visualArticle=post;articleDraft=clone(post);
+    visualArticle=post;articleDraft=clone(post);activeVisualArticleBlock=null;
     builderPage='article';selectedBuilderBlock=-1;
     $('#visualFrame').src=`../articulo.html?slug=${encodeURIComponent(post.slug)}&cms_live_preview=1&cms_inline_edit=1&t=${Date.now()}`;
     renderBuilder();
@@ -663,7 +728,35 @@
   function renderBuilder(){
     if(builderPage==='article'){
       const host=$('#foroBuilder');
-      if(host){host.innerHTML=articleVisualTree();host.querySelector('[data-article-back]')?.addEventListener('click',()=>{visualArticle=null;articleDraft=null;builderPage='conocimiento';$('#visualPage').value='../conocimiento.html';renderBuilder();reloadVisual()});host.querySelector('[data-article-save]')?.addEventListener('click',saveVisualArticle);host.querySelectorAll('[data-article-jump]').forEach(btn=>btn.onclick=()=>$('#visualFrame')?.contentDocument?.querySelector(btn.dataset.articleJump)?.scrollIntoView({behavior:'smooth',block:'center'}));}
+      if(host){host.innerHTML=articleVisualTree();host.querySelector('[data-article-back]')?.addEventListener('click',()=>{visualArticle=null;articleDraft=null;builderPage='conocimiento';$('#visualPage').value='../conocimiento.html';renderBuilder();reloadVisual()});host.querySelector('[data-article-save]')?.addEventListener('click',saveVisualArticle);host.querySelectorAll('[data-article-jump]').forEach(btn=>btn.onclick=()=>$('#visualFrame')?.contentDocument?.querySelector(btn.dataset.articleJump)?.scrollIntoView({behavior:'smooth',block:'center'}));
+        function applyVisualBlock(fn){const f=$('#visualFrame'),doc=f?.contentDocument,body=doc?.querySelector('.article-body');const block=activeVisualArticleBlock;if(!body||!block||!body.contains(block)){toast('Seleccioná un bloque dentro del cuerpo del artículo');return}fn(block,doc,body);body.dispatchEvent(new Event('input',{bubbles:true}));}
+        for(const [attr,style] of [['data-article-font','fontFamily'],['data-article-size','fontSize'],['data-article-leading','lineHeight'],['data-article-align','textAlign']]){
+          host.querySelector('['+attr+']')?.addEventListener('change',e=>applyVisualBlock(b=>{b.style[style]=style==='fontSize'?e.target.value+'px':e.target.value;}));
+        }
+        host.querySelector('[data-article-structure]')?.addEventListener('change',e=>applyVisualBlock((b,doc)=>{if(!['P','H2','H3','BLOCKQUOTE'].includes(b.tagName))return;const replacement=doc.createElement(e.target.value);replacement.innerHTML=b.innerHTML;replacement.style.cssText=b.style.cssText;b.replaceWith(replacement);activeVisualArticleBlock=replacement;}));
+        host.querySelectorAll('[data-article-add]').forEach(btn=>btn.onclick=()=>{
+          const kind=btn.dataset.articleAdd;
+          const f=$('#visualFrame'),doc=f?.contentDocument,body=doc?.querySelector('.article-body');if(!body)return;
+          const add=el=>{if(activeVisualArticleBlock&&body.contains(activeVisualArticleBlock))activeVisualArticleBlock.after(el);else body.append(el);el.scrollIntoView({behavior:'smooth',block:'center'});body.dispatchEvent(new Event('input',{bubbles:true}));};
+          if(kind==='image'||kind==='youtube'){
+            chooseRichMedia(kind,raw=>{
+              const fig=doc.createElement('figure');fig.className='rich-media';
+              if(kind==='youtube'){
+                const id=richYouTubeId(raw);if(!id){toast('Enlace de YouTube inválido');return}fig.classList.add('rich-youtube');fig.dataset.youtube=id;
+                const frame=doc.createElement('iframe');frame.src='https://www.youtube-nocookie.com/embed/'+id+'?rel=0&controls=1';frame.title='Video de YouTube';frame.allowFullscreen=true;fig.append(frame);
+              }else{const img=doc.createElement('img');img.src=raw;img.alt='Imagen del artículo';fig.append(img);}
+              add(fig);
+            });return;
+          }
+          let el;
+          if(kind==='columns'){el=doc.createElement('div');el.className='foro-template-columns';el.innerHTML='<div><h3>Primera columna</h3><p>Editá este texto.</p></div><div><h3>Segunda columna</h3><p>Editá este texto.</p></div>';}
+          else{el=doc.createElement(kind);el.textContent=kind==='h2'?'Nuevo título':'Nuevo párrafo';}
+          add(el);
+        });
+        host.querySelector('[data-article-block-up]')?.addEventListener('click',()=>applyVisualBlock(b=>b.previousElementSibling?.before(b)));
+        host.querySelector('[data-article-block-down]')?.addEventListener('click',()=>applyVisualBlock(b=>b.nextElementSibling?.after(b)));
+        host.querySelector('[data-article-block-delete]')?.addEventListener('click',()=>applyVisualBlock(b=>{if(confirm('¿Eliminar este bloque del artículo?')){b.remove();activeVisualArticleBlock=null;}}));
+}
       return;
     }
 
