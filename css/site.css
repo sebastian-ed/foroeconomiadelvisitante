@@ -444,3 +444,15 @@ html body .article-body h2,html body .article-body h3,html body .article-body h4
 .foro-bio-input{min-height:125px;background:#fff;color:#082c50;border:1px solid #aac1d6;border-radius:6px;padding:16px;line-height:1.65;white-space:pre-wrap;outline-offset:2px;}
 .foro-bio-input:focus{outline:2px solid #0b80ae;}
 .foro-bio-input:empty:before{content:attr(data-placeholder);color:#74879b;pointer-events:none;}
+
+/* V35 · Resumen automático opcional, debajo de la firma */
+.foro-ai-box{margin:20px 0 0;max-width:760px;}
+.foro-ai-trigger{appearance:none;background:var(--navy,#063e76);color:#fff;border:1px solid var(--navy,#063e76);border-radius:3px;padding:12px 19px;font:600 14px/1.35 var(--font-body,sans-serif);cursor:pointer;display:inline-flex;gap:10px;align-items:center;}
+.foro-ai-trigger:hover,.foro-ai-trigger:focus-visible{background:#075b94;outline:2px solid #078fc1;outline-offset:2px;}
+.foro-ai-trigger:disabled{opacity:.65;cursor:wait;}
+.foro-ai-note{font:400 12px/1.5 var(--font-body,sans-serif);color:var(--muted,#687b8b);margin:8px 0 0;}
+.foro-ai-result{margin:14px 0 0;padding:20px 22px;border:1px solid #cbd8e1;background:#f4f8fb;color:#123b5a;font:400 16px/1.6 var(--font-body,sans-serif);}
+.foro-ai-result[hidden]{display:none!important;}
+.foro-ai-result ul{padding-left:22px;margin:0;}
+.foro-ai-result li+li{margin-top:10px;}
+@media(max-width:640px){.foro-ai-trigger{width:100%;justify-content:center;min-height:46px}.foro-ai-result{padding:16px}}

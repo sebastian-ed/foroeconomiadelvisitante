@@ -456,13 +456,46 @@
     catch (err) { console.warn(err); status.textContent='No se pudo enviar. Intentá nuevamente o escribí por email.'; }
   }
 
+  function setupArticleAiSummary(post) {
+    const btn = $('#foroAiTrigger');
+    const output = $('#foroAiResult');
+    if (!btn || !output) return;
+    btn.addEventListener('click', async () => {
+      if (!output.hidden) { output.hidden=true;btn.setAttribute('aria-expanded','false');return; }
+      output.hidden=false;btn.setAttribute('aria-expanded','true');
+      if (output.dataset.done==='true') return;
+      const article = $('#articulo');
+      const articleCopy=article?.cloneNode(true);
+      articleCopy?.querySelectorAll('iframe,video,figure,.foro-author-bio,.references,.foro-download,script,style').forEach(el=>el.remove());
+      const text=String(articleCopy?.textContent||'').replace(/\s+/g,' ').trim();
+      if(text.length < 180){output.textContent='Esta publicación es demasiado breve para generar un resumen.';return;}
+      const config=window.FORO_SUPABASE||{};
+      if(!config.url){output.textContent='El resumen automático no está configurado todavía.';return;}
+      btn.disabled=true;output.innerHTML='<p class="foro-ai-loading">Generando resumen…</p>';
+      try {
+        const response=await fetch(config.url.replace(/\/$/,'')+'/functions/v1/summarize-article',{
+          method:'POST',headers:{'Content-Type':'application/json','apikey':config.anonKey||''},
+          body:JSON.stringify({title:post.title,text:text.slice(0,18000)})
+        });
+        const data=await response.json().catch(()=>({}));
+        if(!response.ok) throw new Error(data.error || 'No se pudo generar el resumen.');
+        const points=Array.isArray(data.points)?data.points.slice(0,4).map(x=>String(x||'').trim()).filter(Boolean):[];
+        if(!points.length)throw new Error('El servicio devolvió un resumen vacío.');
+        const ul=document.createElement('ul');points.forEach(point=>{const li=document.createElement('li');li.textContent=point;ul.append(li)});
+        output.replaceChildren(ul);output.dataset.done='true';
+      } catch(error) { output.textContent=String(error.message||'Error al generar el resumen.'); }
+      finally {btn.disabled=false;}
+    });
+  }
+
   function renderPostPage() {
     const slug=qs.get('slug')||'';
     let p=posts.find(x=>x.slug===slug);
     if (!p) { $('#main').innerHTML=notFound('Publicación no encontrada'); return; }
     applySeo({title:p.seo_title||`${p.title} — ${state.site.shortName}`,description:p.seo_description||p.excerpt,image:p.featured_image||state.site.seo?.image});
     const refs = Array.isArray(p.references) ? p.references : [];
-    $('#main').innerHTML = `<article class="article-page"><header class="article-header"><div class="shell article-head-grid"><div><div class="article-kicker"><span>${esc(typeNames[p.type]||p.category||'Publicación')}</span><time>${esc(fmtDate(p.published_at,true))}</time></div><h1>${esc(p.title)}</h1><div class="article-byline">Escrito por: <strong>${esc(p.author_name||state.site.shortName)}</strong>${p.author_role?`<span> · ${esc(p.author_role)}</span>`:''}</div><div class="article-excerpt excerpt-paragraphs">${excerptParagraphs(p.excerpt)}</div></div></div></header><div class="shell article-layout"><aside><span>CONTENIDO</span><a href="#articulo">Artículo</a>${refs.length?'<a href="#fuentes">Fuentes</a>':''}<a href="participa.html">Enviar un aporte</a></aside><div class="article-body" id="articulo">${sanitizeRichHtml(p.content_html||'')}${refs.length?`<div class="references" id="fuentes"><h2>Fuentes y referencias</h2><ol>${refs.map(r=>`<li>${esc(r)}</li>`).join('')}</ol></div>`:''}</div></div></article>`;
+    $('#main').innerHTML = `<article class="article-page"><header class="article-header"><div class="shell article-head-grid"><div><div class="article-kicker"><span>${esc(typeNames[p.type]||p.category||'Publicación')}</span><time>${esc(fmtDate(p.published_at,true))}</time></div><h1>${esc(p.title)}</h1><div class="article-byline">Escrito por: <strong>${esc(p.author_name||state.site.shortName)}</strong>${p.author_role?`<span> · ${esc(p.author_role)}</span>`:''}</div><div class="foro-ai-box" id="foroAiBox"><button class="foro-ai-trigger" id="foroAiTrigger" type="button" aria-expanded="false" aria-controls="foroAiResult"><span aria-hidden="true">✦</span> Resumir nota con IA</button><p class="foro-ai-note">Un resumen breve generado automáticamente. Puede contener imprecisiones.</p><div class="foro-ai-result" id="foroAiResult" hidden role="status" aria-live="polite"></div></div><div class="article-excerpt excerpt-paragraphs">${excerptParagraphs(p.excerpt)}</div></div></div></header><div class="shell article-layout"><aside><span>CONTENIDO</span><a href="#articulo">Artículo</a>${refs.length?'<a href="#fuentes">Fuentes</a>':''}<a href="participa.html">Enviar un aporte</a></aside><div class="article-body" id="articulo">${sanitizeRichHtml(p.content_html||'')}${refs.length?`<div class="references" id="fuentes"><h2>Fuentes y referencias</h2><ol>${refs.map(r=>`<li>${esc(r)}</li>`).join('')}</ol></div>`:''}</div></div></article>`;
+    setupArticleAiSummary(p);
     const excerptPhoto=$('#articulo figure.foro-image-excerpt-right');
     if(excerptPhoto){
       const parent=$('.article-header .article-head-grid > div');
