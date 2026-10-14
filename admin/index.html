@@ -28,6 +28,7 @@
         <button data-view="newsletter"><i>✦</i><span>Newsletter</span></button>
         <button data-view="design"><i>◐</i><span>Diseño</span></button>
         <button data-view="navigation"><i>↗</i><span>Navegación</span></button>
+        <button data-view="resources"><i>▣</i><span>Biblioteca y recursos</span></button>
         <button data-view="history"><i>↶</i><span>Revisiones</span></button>
         <button data-view="settings"><i>⚙</i><span>Ajustes</span></button>
         <button data-view="advanced"><i>{ }</i><span>JSON avanzado</span></button>
@@ -100,8 +101,10 @@
           <div class="settings-grid"><article class="panel"><header><div><small>PALETA</small><h3>Colores</h3></div></header><div class="form-grid" id="themeColors"></div></article><article class="panel"><header><div><small>TIPOGRAFÍA</small><h3>Fuentes</h3></div></header><div class="form-stack" id="themeFonts"></div></article><article class="panel full"><header><div><small>LAYOUT</small><h3>Escala</h3></div></header><div class="form-grid cols-3" id="themeLayout"></div></article></div>
         </section>
 
+        <section class="view" data-view-panel="resources"><div class="toolbar"><div><span class="kicker">CENTRO DOCUMENTAL</span><h2>Biblioteca y recursos</h2><p>Publicá PDFs, archivos Word o Excel, enlaces, videos y materiales de consulta. Usá el editor de publicaciones para insertar medios y definir autoría, descripción y estado.</p></div><button type="button" class="btn primary" id="newResource">+ Nuevo recurso</button></div><div class="panel" style="padding:20px" id="resourceAdminList"></div></section>
+
         <section class="view" data-view-panel="navigation">
-          <div class="toolbar"><div><span class="kicker">HEADER</span><h2>Navegación</h2><p>Editá etiquetas, enlaces, orden y CTA destacado. Los submenús se conservan en cada elemento.</p></div><button class="btn primary" id="addNav">+ Agregar enlace</button></div>
+          <div class="toolbar"><div><span class="kicker">HEADER</span><h2>Navegación</h2><p>Editá etiquetas, enlaces, orden y CTA destacado. También podés agregar, reordenar y quitar subsecciones. El destino de cada enlace es independiente de su nombre.</p></div><button class="btn primary" id="addNav">+ Agregar enlace</button></div>
           <div id="navList" class="repeater-list"></div>
         </section>
 

@@ -253,3 +253,13 @@ dialog.foro-nested-dialog .foro-media-picker-dialog{max-height:min(90dvh,900px);
 .foro-import-preview-content h3{font-size:1.4rem;line-height:1.25;margin:1.3rem 0 .65rem}
 .foro-import-preview-content p{white-space:normal;margin:.7rem 0;line-height:1.6}
 .foro-import-actions button:disabled{opacity:.5;cursor:progress}
+
+/* Biblioteca y editor de navegación V37 */
+.navigation-guidance{background:#eaf4f9;color:#153c59;border:1px solid #bad6e5;padding:15px;margin:0 0 17px;font-size:13px;line-height:1.6}
+.nav-children-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:16px 0 9px}.nav-children{display:grid;gap:8px}
+.nav-child{display:grid;grid-template-columns:minmax(120px,1fr) minmax(175px,1.4fr) repeat(3,33px);gap:6px;align-items:center}
+.nav-child input{width:100%;min-width:0;padding:9px;border:1px solid #ccdce7;border-radius:3px;color:#082d4d;background:white}
+.nav-child button{min-height:36px;border:1px solid #ccdce7;background:#f4f8fa;color:#063e76;cursor:pointer}
+.nav-link-warning,.nav-child-warning{color:#a33b20;font-size:12px}.nav-child-warning{grid-column:1/-1}
+.resource-admin-item{padding:13px 0;border-bottom:1px solid #dce6eb;display:flex;justify-content:space-between;align-items:center;gap:15px}.resource-admin-item small{display:block;color:#617c8e;margin-top:4px}
+@media(max-width:680px){.nav-child{grid-template-columns:1fr 1fr repeat(3,30px)}.nav-child input:nth-child(2){grid-column:1/-1;grid-row:2}.nav-child button{grid-row:1}.nav-child input:first-child{grid-column:1/3}}

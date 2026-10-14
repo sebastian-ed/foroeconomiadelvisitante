@@ -55,7 +55,7 @@ window.FORO_DEFAULT_CONTENT = {
       { label: "Datos y análisis", href: "conocimiento.html?tipo=analysis" },
       { label: "Investigaciones", href: "conocimiento.html?tipo=research" },
       { label: "Informes", href: "conocimiento.html?tipo=report" },
-      { label: "Biblioteca", href: "conocimiento.html?tipo=resource" }
+      { label: "Biblioteca y recursos", href: "biblioteca-recursos.html" }
     ] },
     { id: "nav-activities", label: "Actividades", href: "actividades.html", children: [
       { label: "Agenda", href: "actividades.html" },

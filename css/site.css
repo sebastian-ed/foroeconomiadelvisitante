@@ -453,3 +453,7 @@ html body .article-body h2,html body .article-body h3,html body .article-body h4
 .article-body .foro-author-bio-text{flex:1;min-width:0;}
 .article-body .foro-bio-photo-right .foro-author-bio-photo{order:2;}
 @media(max-width:600px){.article-body .foro-author-bio-content{gap:16px}.article-body .foro-author-bio-photo{flex-basis:82px;width:82px}.article-body .foro-bio-photo-large .foro-author-bio-photo{flex-basis:110px;width:110px}}
+
+/* Biblioteca y recursos V37 */
+.resource-search-label{display:block;max-width:520px;font-size:13px;font-weight:700;color:#063e76;margin:20px 0 30px}
+.resource-search-label input{display:block;margin-top:9px;width:100%;padding:14px 16px;background:#fff;border:1px solid #a8c5d5;color:#052b4a;font:inherit;font-weight:400}

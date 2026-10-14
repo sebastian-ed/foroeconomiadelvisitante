@@ -199,25 +199,14 @@
 
   function renderHeader() {
     const configured = Array.isArray(state.navigation) ? state.navigation.filter(n=>n && n.href && n.label) : [];
-    // Preserve administrator-managed menus, but recover missing core routes on legacy sites.
-    const required = [
-      {label:'Inicio',href:'index.html'}, {label:'El Foro',href:'el-foro.html',children:[
-        {label:'Quiénes somos',href:'el-foro.html#quienes-somos'},
-        {label:'Misión y visión',href:'el-foro.html#mision-vision'},
-        {label:'Metodología',href:'el-foro.html#metodologia'},
-        {label:'Comisión promotora',href:'el-foro.html#comision-promotora'}]},
+    // Editable navigation is authoritative. Required destinations remain discoverable in the footer.
+    const nav = configured.length ? configured : [
+      {label:'Inicio',href:'index.html'}, {label:'El Foro',href:'el-foro.html'},
       {label:'Conocimiento',href:'conocimiento.html'},
+      {label:'Biblioteca y recursos',href:'biblioteca-recursos.html'},
       {label:'Actividades',href:'actividades.html'},
-      {label:'Voces',href:'voces.html',children:[{label:'Entrevistas',href:'voces.html#entrevistas'},{label:'Experiencias',href:'voces.html#experiencias'}]},
-      {label:'Participá',href:'participa.html',featured:true}
+      {label:'Voces',href:'voces.html'}, {label:'Participá',href:'participa.html',featured:true}
     ];
-    const route = href => String(href||'').split(/[?#]/)[0].replace(/^\.\//,'');
-    const nav = [...configured];
-    required.forEach(item => {
-      const existing=nav.find(n=>route(n.href)===route(item.href));
-      if (!existing) nav.push(item);
-      else if ((!Array.isArray(existing.children)||!existing.children.length) && item.children) existing.children=item.children;
-    });
     const current = page;
     const navHtml = nav.map(n => {
       const key = String(n.href).split('.')[0];
@@ -261,7 +250,7 @@
     $('#siteFooter').innerHTML = `
       <div class="footer-top shell">
         <div class="footer-brand"><img src="${attr(s.footerIcon||s.icon)}" alt=""><strong>${esc(s.shortName)}</strong><p>${esc(s.footerNote)}</p></div>
-        <div class="footer-links"><div><span>Explorar</span><a href="el-foro.html">El Foro</a><a href="conocimiento.html">Conocimiento</a><a href="actividades.html">Actividades</a><a href="voces.html">Voces</a></div><div><span>Participar</span><a href="participa.html">Enviar una propuesta</a><a href="mailto:${attr(s.contactEmail)}">Contacto</a><a href="admin/">Administración</a></div></div>
+        <div class="footer-links"><div><span>Explorar</span><a href="el-foro.html">El Foro</a><a href="conocimiento.html">Conocimiento</a><a href="biblioteca-recursos.html">Biblioteca y recursos</a><a href="actividades.html">Actividades</a><a href="voces.html">Voces</a></div><div><span>Participar</span><a href="participa.html">Enviar una propuesta</a><a href="mailto:${attr(s.contactEmail)}">Contacto</a><a href="admin/">Administración</a></div></div>
         <div class="footer-newsletter"><span>BOLETÍN DEL FORO</span><h3>Ideas, informes y actividades en tu correo.</h3><form id="newsletterForm"><input type="email" name="email" placeholder="tu@email.com" required aria-label="Email"><button type="submit">Suscribirme</button><small id="newsletterStatus">Sin spam. <a href="newsletter.html">Gestioná tu suscripción</a> cuando quieras.</small></form></div>
       </div>
       <div class="footer-bottom shell"><span>© ${new Date().getFullYear()} ${esc(s.shortName)}</span><div>${social.map(([name,url])=>`<a href="${attr(url)}" target="_blank" rel="noopener">${esc(name)}</a>`).join('')}<a href="privacidad.html">Privacidad</a><a href="condiciones.html">Condiciones de uso</a></div></div>`;
@@ -416,9 +405,24 @@
     const type=qs.get('tipo')||'';
     const valid=knowledgeTypes;
     const list=posts.filter(p=>!type||p.type===type).filter(p=>valid.has(p.type));
-    const tabs=[['','Todo'],['article','Artículos'],['analysis','Análisis'],['research','Investigaciones'],['report','Informes'],['resource','Biblioteca']];
+    const tabs=[['','Todo'],['article','Artículos'],['analysis','Análisis'],['research','Investigaciones'],['report','Informes'],['resource','Biblioteca y recursos']];
     $('#main').innerHTML = `${collectionHeader('CONOCIMIENTO','Ideas, datos y análisis para decidir mejor','Un espacio editorial para reunir investigaciones, perspectivas, informes y fuentes que ayuden a comprender la economía del visitante.')}
       <section class="section collection-section"><div class="shell"><div class="filter-tabs">${tabs.map(([k,l])=>`<a class="${type===k?'active':''}" href="conocimiento.html${k?`?tipo=${k}`:''}">${l}</a>`).join('')}</div><div class="post-grid collection-grid">${list.length?list.map(postCard).join(''):`<div class="empty-state"><span>EN PREPARACIÓN</span><h3>No hay publicaciones en esta categoría todavía</h3><p>El Foro prioriza publicar contenidos con autoría, fuentes y criterios editoriales definidos.</p></div>`}</div></div></section>`;
+  }
+
+  function renderResourcesPage() {
+    applySeo({title:`Biblioteca y recursos — ${state.site.shortName}`,description:'Documentos, publicaciones, videos y enlaces seleccionados sobre la economía del visitante.'});
+    const resources=posts.filter(p=>p.type==='resource');
+    const url=new URLSearchParams(location.search);
+    const kind=url.get('formato')||'';
+    const formats=[['','Todos'],['documento','Documentos'],['video','Videos'],['enlace','Enlaces']];
+    const getKind=p=>{const html=String(p.content_html||'');if(/<iframe|<video|youtube.com|youtu.be|data-foro-video/i.test(html))return 'video';if(/\.pdf|\.docx?|\.xlsx?|\.pptx?|data-foro-document/i.test(html))return 'documento';return 'enlace'};
+    const list=resources.filter(p=>!kind||getKind(p)===kind);
+    $('#main').innerHTML=`${collectionHeader('RECURSOS','Biblioteca y recursos','Documentos, videos y enlaces para investigar, comprender y compartir conocimiento sobre la economía del visitante.')}
+      <section class="section collection-section"><div class="shell"><div class="filter-tabs">${formats.map(([k,l])=>`<a class="${k===kind?'active':''}" href="biblioteca-recursos.html${k?'?formato='+k:''}">${l}</a>`).join('')}</div>
+      <label class="resource-search-label">Buscar recursos <input type="search" id="resourceSearch" placeholder="Título, autor, tema o etiqueta…" autocomplete="off"></label>
+      <div class="post-grid collection-grid" id="resourceGrid">${list.map(postCard).join('')||'<div class="empty-state"><h3>Próximamente, recursos para consultar</h3><p>Las publicaciones incorporadas desde el CMS aparecerán aquí.</p></div>'}</div></div></section>`;
+    $('#resourceSearch')?.addEventListener('input',e=>{const q=e.target.value.toLocaleLowerCase('es');const matched=list.filter(p=>[p.title,p.excerpt,p.author_name,p.category,...(p.tags||[])].join(' ').toLocaleLowerCase('es').includes(q));$('#resourceGrid').innerHTML=matched.map(postCard).join('')||'<p>No se encontraron recursos.</p>'});
   }
 
   function renderVoicesPage() {
@@ -623,6 +627,7 @@
     if (page==='home') renderHome();
     else if (page==='el-foro') renderForoPage();
     else if (page==='conocimiento') renderKnowledgePage();
+    else if (page==='resources') renderResourcesPage();
     else if (page==='voces') renderVoicesPage();
     else if (page==='actividades') renderActivitiesPage();
     else if (page==='participa') renderParticipaPage();

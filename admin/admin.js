@@ -46,7 +46,7 @@
     voicesFeed:['◉','Voces','Entrevistas, casos y experiencias.'],
     joinCta:['↗','Participación','Convocatoria final a sumarse.']
   };
-  const titles={dashboard:'Inicio',visual:'Editor visual',home:'Portada',pages:'Páginas',posts:'Publicaciones',events:'Actividades',media:'Medios',inquiries:'Consultas',newsletter:'Newsletter',design:'Diseño',navigation:'Navegación',history:'Revisiones',users:'Colaboradores',settings:'Ajustes',advanced:'JSON avanzado',preview:'Vista previa'};
+  const titles={dashboard:'Inicio',visual:'Editor visual',home:'Portada',pages:'Páginas',posts:'Publicaciones',events:'Actividades',media:'Medios',inquiries:'Consultas',newsletter:'Newsletter',resources:'Biblioteca y recursos',design:'Diseño',navigation:'Navegación',history:'Revisiones',users:'Colaboradores',settings:'Ajustes',advanced:'JSON avanzado',preview:'Vista previa'};
   const postTypes={article:'Artículo',analysis:'Análisis',research:'Investigación',report:'Informe',resource:'Recurso / biblioteca',interview:'Entrevista',podcast:'Podcast / audiovisual',experience:'Experiencia',case:'Caso territorial'};
   const eventTypes={conversation:'Conversatorio',workshop:'Taller',hackathon:'Hackatón',project:'Proyecto',meeting:'Encuentro'};
 
@@ -61,6 +61,7 @@
     $('#sidebar').classList.remove('open');
     if(view==='visual'){setTimeout(()=>{renderBuilder();resizeVisual();pushPreview()},60)}
     if(view==='posts') loadPosts();
+    if(view==='resources') loadPosts().then(()=>renderResourcesAdmin());
     if(view==='events') loadEvents();
     if(view==='media') loadMedia();
     if(view==='users') loadCollaborators();
@@ -261,9 +262,36 @@
     $$('[data-theme]').forEach(c=>c.oninput=()=>{state.theme[c.dataset.theme]=c.value;$(`[data-theme-text="${c.dataset.theme}"]`).value=c.value;markDirty()});$$('[data-theme-text]').forEach(t=>t.oninput=()=>{state.theme[t.dataset.themeText]=t.value;$(`[data-theme="${t.dataset.themeText}"]`).value=t.value;markDirty()});$$('[data-edit-path]',$('[data-view-panel="design"]')).forEach(el=>el.oninput=()=>{setPath(state,el.dataset.editPath,el.type==='number'?Number(el.value):el.value);markDirty()});
   }
 
+  const navigationDestinations=[
+    ['index.html','Inicio'],['el-foro.html','El Foro'],['el-foro.html#quienes-somos','Quiénes somos'],
+    ['el-foro.html#mision','Misión y visión'],['conocimiento.html','Conocimiento'],
+    ['conocimiento.html?tipo=article','Artículos'],['conocimiento.html?tipo=analysis','Análisis'],
+    ['conocimiento.html?tipo=research','Investigaciones'],['conocimiento.html?tipo=report','Informes'],
+    ['biblioteca-recursos.html','Biblioteca y recursos'],['actividades.html','Actividades'],
+    ['voces.html','Voces'],['voces.html?tipo=interview','Entrevistas'],
+    ['participa.html','Participá'],['newsletter.html','Newsletter'],['buscar.html','Buscar']];
+  function validNavHref(href){
+    const v=String(href||'').trim();
+    if(!v||v==='#'||/^javascript:/i.test(v))return false;
+    if(/^(https:\/\/|mailto:)/i.test(v))return true;
+    const local=v.split(/[?#]/)[0];
+    return navigationDestinations.some(([h])=>h.split(/[?#]/)[0]===local);
+  }
   function renderNavigation(){
-    $('#navList').innerHTML=(state.navigation||[]).map((n,i)=>`<article class="repeater-card" data-nav="${i}"><div class="repeater-head"><strong>${esc(n.label||`Enlace ${i+1}`)}</strong><div><button class="icon-btn" data-na="up">↑</button><button class="icon-btn" data-na="down">↓</button><button class="icon-btn danger" data-na="delete">×</button></div></div><div class="repeater-fields"><label class="field"><span>Etiqueta</span><input data-np="label" value="${esc(n.label||'')}"></label><label class="field"><span>Enlace</span><input data-np="href" value="${esc(n.href||'')}"></label><label class="field check-field"><input type="checkbox" data-np="featured" ${n.featured?'checked':''}><span>CTA</span></label></div><p style="font-size:8px;color:#6b7e8f;margin:8px 0 0">Submenú: ${(n.children||[]).map(x=>esc(x.label)).join(' · ')||'sin submenú'}</p></article>`).join('');
-    $$('.repeater-card').forEach(card=>{const i=Number(card.dataset.nav);$$('[data-np]',card).forEach(el=>el.oninput=()=>{state.navigation[i][el.dataset.np]=el.type==='checkbox'?el.checked:el.value;markDirty()});$$('[data-na]',card).forEach(b=>b.onclick=()=>{const a=b.dataset.na;if(a==='up'&&i>0)[state.navigation[i-1],state.navigation[i]]=[state.navigation[i],state.navigation[i-1]];if(a==='down'&&i<state.navigation.length-1)[state.navigation[i+1],state.navigation[i]]=[state.navigation[i],state.navigation[i+1]];if(a==='delete'&&confirm('¿Eliminar este enlace?'))state.navigation.splice(i,1);markDirty();renderNavigation()})});
+    const options=navigationDestinations.map(([href,label])=>`<option value="${esc(href)}">${esc(label)}</option>`).join('');
+    const navs=state.navigation||[];
+    $('#navList').innerHTML=`<div class="navigation-guidance">Elegí un destino existente para cada enlace. Cambiar una etiqueta no cambia la página de destino. Los enlaces que quites del menú siguen disponibles desde las demás secciones y el pie de página. <a href="biblioteca-recursos.html" target="_blank" rel="noopener">Ver Biblioteca y recursos ↗</a></div>`+
+    navs.map((n,i)=>`<article class="repeater-card nav-editor-card" data-nav="${i}"><div class="repeater-head"><strong>${esc(n.label||`Enlace ${i+1}`)}</strong><div><button type="button" class="icon-btn" data-na="up" title="Subir">↑</button><button type="button" class="icon-btn" data-na="down" title="Bajar">↓</button><button type="button" class="icon-btn danger" data-na="delete" title="Quitar del menú">×</button></div></div>
+      <div class="repeater-fields"><label class="field"><span>Nombre visible</span><input data-np="label" value="${esc(n.label||'')}"></label><label class="field"><span>Destino</span><input data-np="href" list="navDestinationList" value="${esc(n.href||'')}"></label><label class="field check-field"><input type="checkbox" data-np="featured" ${n.featured?'checked':''}><span>Destacar en el menú</span></label></div>
+      <div class="nav-link-warning" ${validNavHref(n.href)?'hidden':''}>Revisá este enlace. Seleccioná una página existente del listado.</div>
+      <div class="nav-children-head"><strong>Submenú (${(n.children||[]).length})</strong><button type="button" class="btn ghost" data-na="child-add">+ Agregar subsección</button></div>
+      <div class="nav-children">${(n.children||[]).map((c,j)=>`<div class="nav-child" data-child="${j}"><input aria-label="Nombre de subsección" data-cp="label" value="${esc(c.label||'')}" placeholder="Nombre"><input aria-label="Destino de subsección" data-cp="href" list="navDestinationList" value="${esc(c.href||'')}" placeholder="Página de destino"><button type="button" data-ca="up" title="Subir">↑</button><button type="button" data-ca="down" title="Bajar">↓</button><button type="button" data-ca="delete" title="Eliminar">×</button><span class="nav-child-warning" ${validNavHref(c.href)?'hidden':''}>Destino no válido</span></div>`).join('')}</div>
+    </article>`).join('')+`<datalist id="navDestinationList">${options}</datalist>`;
+    $$('.nav-editor-card').forEach(card=>{const i=Number(card.dataset.nav),item=navs[i];
+      $$('[data-np]',card).forEach(el=>{el.oninput=()=>{item[el.dataset.np]=el.type==='checkbox'?el.checked:el.value;card.querySelector('.nav-link-warning').hidden=validNavHref(item.href);markDirty()}});
+      $$('[data-na]',card).forEach(b=>b.onclick=()=>{const a=b.dataset.na;if(a==='child-add'){item.children=item.children||[];item.children.push({label:'Nueva subsección',href:'biblioteca-recursos.html'})}else if(a==='up'&&i>0)[navs[i-1],navs[i]]=[navs[i],navs[i-1]];else if(a==='down'&&i<navs.length-1)[navs[i+1],navs[i]]=[navs[i],navs[i+1]];else if(a==='delete'&&confirm('¿Quitar este enlace del menú? La página no se elimina.'))navs.splice(i,1);markDirty();renderNavigation()});
+      $$('.nav-child',card).forEach(child=>{const j=Number(child.dataset.child),c=item.children[j];$$('[data-cp]',child).forEach(el=>el.oninput=()=>{c[el.dataset.cp]=el.value;child.querySelector('.nav-child-warning').hidden=validNavHref(c.href);markDirty()});$$('[data-ca]',child).forEach(b=>b.onclick=()=>{const a=b.dataset.ca,arr=item.children;if(a==='up'&&j>0)[arr[j-1],arr[j]]=[arr[j],arr[j-1]];if(a==='down'&&j<arr.length-1)[arr[j+1],arr[j]]=[arr[j],arr[j+1]];if(a==='delete')arr.splice(j,1);markDirty();renderNavigation()})})
+    });
   }
 
   function renderSettings(){
@@ -286,6 +314,12 @@
     $$('[data-post-delete]').forEach(b=>b.onclick=async()=>{const post=posts.find(x=>x.id===b.dataset.postDelete);if(!post||!confirm(`¿Eliminar “${post.title}”?`))return;try{await db.deletePost(post.id);toast('Publicación eliminada');loadPosts()}catch(e){toast(e.message)}});
   }
 
+  function renderResourcesAdmin(){
+    const list=posts.filter(p=>p.type==='resource');
+    const box=$('#resourceAdminList');if(!box)return;
+    box.innerHTML=list.map(p=>`<div class="resource-admin-item"><div><strong>${esc(p.title)}</strong><small>${esc(effectiveStatus(p))} · ${esc(p.category||'Recurso')}</small></div><button type="button" class="btn ghost" data-edit-resource="${esc(p.id)}">Editar</button></div>`).join('')||'<p>Todavía no hay recursos. Creá uno para compartir documentos, enlaces o videos.</p>';
+    $$('[data-edit-resource]',box).forEach(b=>b.onclick=()=>openPost(posts.find(p=>p.id===b.dataset.editResource)));
+  }
   function mediaDatalist(){return `<datalist id="mediaUrlList">${mediaAssets.filter(a=>(a.mime_type||'').startsWith('image/')).map(a=>`<option value="${esc(a.url)}">${esc(a.name)}</option>`).join('')}</datalist>`}
   function richEditorHtml(content=''){
     return `<div class="rich-toolbar" data-rich-toolbar><button type="button" data-cmd="bold"><b>B</b></button><button type="button" data-cmd="italic"><i>I</i></button><button type="button" data-cmd="formatBlock" data-val="h2">H2</button><button type="button" data-cmd="formatBlock" data-val="h3">H3</button><button type="button" data-cmd="formatBlock" data-val="p">P</button><button type="button" data-cmd="insertUnorderedList">• Lista</button><button type="button" data-cmd="insertOrderedList">1. Lista</button><button type="button" data-cmd="formatBlock" data-val="blockquote">❝</button><button type="button" data-cmd="createLink">Link</button><button type="button" data-cmd="removeFormat">Limpiar</button></div><div class="block-add-bar"><span>Agregar bloque</span><button type="button" data-add-rich="h2">Título</button><button type="button" data-add-rich="h3">Subtítulo</button><button type="button" data-add-rich="p">Párrafo</button><button type="button" data-add-rich="image">Imagen</button><button type="button" data-add-rich="youtube">YouTube</button><button type="button" data-add-rich="video">Video propio</button><button type="button" data-add-rich="document">PDF / Word / Excel</button><button type="button" data-add-rich="map">Mapa</button><button type="button" data-add-rich="table">Tabla</button><button type="button" data-add-rich="callout">Cuadro destacado</button><button type="button" data-add-rich="blockquote">Cita</button><button type="button" data-add-rich="hr">Separador</button><button type="button" data-add-rich="ul">Lista</button></div><div class="foro-layout-help"><strong>Composición de imágenes</strong><span>Seleccioná la imagen en el cuerpo y elegí ubicación y tamaño en la barra. Para un carrusel inferior, elegí «Carrusel inferior» en dos o más imágenes consecutivas. Podés combinar una imagen lateral con otras abajo.</span></div><div class="rich-editor" contenteditable="true" data-rich-editor aria-label="Editor de bloques">${content||''}</div>`;
@@ -677,7 +711,7 @@
   async function inviteCollaborator(){const email=$('#inviteEmail').value.trim(),role=$('#inviteRole').value,name=$('#inviteName').value.trim();if(!email)return toast('Ingresá un email');const btn=$('#inviteSubmit');btn.disabled=true;try{const result=await manageCollaborator({action:'invite',email,role,display_name:name});toast('Invitación creada');if(result.invite_url){$('#inviteResult').textContent='Enlace de invitación para compartir de forma privada: '+result.invite_url} else $('#inviteResult').textContent='La invitación se envió por correo.';loadCollaborators()}catch(e){toast(e.message)}finally{btn.disabled=false}}
   function renderAll(){renderDashboard();renderSections();renderPages();renderDesign();renderNavigation();renderSettings();renderPosts();renderEvents();renderMedia();renderInquiries();renderNewsletter();renderHistory();renderAdvanced()}
 
-  async function publishSite(){if(!db.configured){toast('Supabase no está configurado');return}try{$('#publishSite').disabled=true;$('#saveState').textContent='Publicando…';await db.saveSiteContent(state,'Publicación desde CMS');clearDirty();toast('Sitio publicado');pushPreview();loadHistory()}catch(e){toast('Error: '+e.message);$('#saveState').textContent='Error'}finally{$('#publishSite').disabled=false}}
+  async function publishSite(){const bad=(state.navigation||[]).some(n=>!validNavHref(n.href)||(n.children||[]).some(c=>!validNavHref(c.href)));if(bad){switchView('navigation');toast('Revisá los destinos marcados antes de publicar el menú');return}if(!db.configured){toast('Supabase no está configurado');return}try{$('#publishSite').disabled=true;$('#saveState').textContent='Publicando…';await db.saveSiteContent(state,'Publicación desde CMS');clearDirty();toast('Sitio publicado');pushPreview();loadHistory()}catch(e){toast('Error: '+e.message);$('#saveState').textContent='Error'}finally{$('#publishSite').disabled=false}}
 
   // V12 structured page builder: every item is independent and editable.
   let activeBuilderSection=0;
@@ -868,7 +902,7 @@
   function refreshPreview(){const f=$('#previewFrame');f.src=`../index.html?cms_live_preview=1&t=${Date.now()}`}
 
   async function loadInitial(){try{const remote=await db.loadSiteContent();state=remote?migrateLegacyPalette(mergeDeep(clone(defaults),remote)):clone(defaults);clearDirty();await Promise.all([loadPosts(),loadEvents(),loadMedia(),loadInquiries(),loadNewsletter(),loadHistory()]);renderAll();pushPreview()}catch(e){toast('Error cargando CMS: '+e.message)}}
-  async function applyRoleAccess(){try{const {data:{user}}=await db.client.auth.getUser();const {data}=await db.client.from('cms_profiles').select('role').eq('user_id',user.id).maybeSingle();if(!data?.role){toast('Este usuario no tiene acceso al CMS');await db.client.auth.signOut();return;}myRole=data.role;$$('[data-view="users"]').forEach(el=>el.style.display=myRole==='admin'?'':'none');const allowed=myRole==='admin'?null:myRole==='editor'?['dashboard','posts','events','media','visual','preview','pages','home']:['dashboard','posts','media','preview'];$$('[data-view]',document).forEach(el=>{if(allowed&&!allowed.includes(el.dataset.view))el.style.display='none'});if(myRole!=='admin')$('#publishSite').style.display='none';$('#userRoleLabel').textContent='Rol: '+myRole}catch(e){console.warn('No fue posible determinar el rol',e)}}
+  async function applyRoleAccess(){try{const {data:{user}}=await db.client.auth.getUser();const {data}=await db.client.from('cms_profiles').select('role').eq('user_id',user.id).maybeSingle();if(!data?.role){toast('Este usuario no tiene acceso al CMS');await db.client.auth.signOut();return;}myRole=data.role;$$('[data-view="users"]').forEach(el=>el.style.display=myRole==='admin'?'':'none');const allowed=myRole==='admin'?null:myRole==='editor'?['dashboard','posts','events','media','visual','preview','pages','home','resources']:['dashboard','posts','media','preview'];$$('[data-view]',document).forEach(el=>{if(allowed&&!allowed.includes(el.dataset.view))el.style.display='none'});if(myRole!=='admin')$('#publishSite').style.display='none';$('#userRoleLabel').textContent='Rol: '+myRole}catch(e){console.warn('No fue posible determinar el rol',e)}}
   async function setSession(session){const logged=Boolean(session?.user);$('#authScreen').classList.toggle('hidden',logged);if(logged){$('#userEmail').textContent=session.user.email||'Usuario';$('#accountButton').textContent=(session.user.email||'A')[0].toUpperCase();await loadInitial();await applyRoleAccess()}}
   async function boot(){
     $('#connectionDot').className=db.configured?'online':'offline';$('#connectionText').textContent=db.configured?'Supabase conectado':'Supabase sin configurar';
@@ -884,8 +918,8 @@
   $('#addSection').onclick=()=>{$('#blockTemplates').innerHTML=Object.entries(typeMeta).map(([type,m])=>`<button type="button" class="template-card" data-template="${type}"><strong>${m[0]} ${m[1]}</strong><small>${m[2]}</small></button>`).join('');$('#blockDialog').showModal();$$('[data-template]').forEach(b=>b.onclick=()=>{const base=defaults.sections.find(s=>s.type===b.dataset.template);if(!base)return;const c=clone(base);c.id=uid(c.type);c.label=`${typeMeta[c.type][1]} — nuevo`;c.settings={...(c.settings||{}),anchor:c.id};state.sections.push(c);$('#blockDialog').close();markDirty();renderSections();renderDashboard();openSectionEditor(state.sections.length-1)})};
   $('#applySection').onclick=()=>{const d=$('#sectionDialog')._draft;d.extraHtml=$('[data-rich-editor]',$('#sectionEditorBody'))?.innerHTML||'';state.sections[editingSection]=clone(d);$('#sectionDialog').close();editingSection=null;markDirty();renderSections();renderDashboard();toast('Bloque actualizado')};
   $('#resetTheme').onclick=()=>{if(confirm('¿Restaurar diseño por defecto?')){state.theme=clone(defaults.theme);markDirty();renderDesign()}};
-  $('#addNav').onclick=()=>{state.navigation.push({id:uid('nav'),label:'Nuevo enlace',href:'#',featured:false,children:[]});markDirty();renderNavigation()};
-  $('#inviteSubmit').onclick=inviteCollaborator;$('#newPost').onclick=()=>openPost();$('#savePost').onclick=savePost;$('#postSearch').oninput=renderPosts;$('#postStatusFilter').onchange=renderPosts;
+  $('#addNav').onclick=()=>{state.navigation.push({id:uid('nav'),label:'Nuevo enlace',href:'biblioteca-recursos.html',featured:false,children:[]});markDirty();renderNavigation()};
+  $('#newResource').onclick=()=>{openPost();editingPost.type='resource';const t=$('#peType');if(t)t.value='resource';};$('#inviteSubmit').onclick=inviteCollaborator;$('#newPost').onclick=()=>openPost();$('#savePost').onclick=savePost;$('#postSearch').oninput=renderPosts;$('#postStatusFilter').onchange=renderPosts;
   $('#newEvent').onclick=()=>openEvent();$('#saveEvent').onclick=saveEvent;
   $('#mediaSearch').oninput=renderMedia;$('#mediaUpload').onchange=async e=>{for(const file of [...e.target.files]){try{toast(`Subiendo ${file.name}…`);await db.uploadMedia(file)}catch(err){toast(`Error en ${file.name}: ${err.message}`)}}e.target.value='';await loadMedia();toast('Carga finalizada')};
   $('#refreshInquiries').onclick=loadInquiries;$('#inquiryFilter').onchange=renderInquiries;$('#saveInquiry').onclick=saveInquiry;
