@@ -444,3 +444,12 @@ html body .article-body h2,html body .article-body h3,html body .article-body h4
 .foro-bio-input{min-height:125px;background:#fff;color:#082c50;border:1px solid #aac1d6;border-radius:6px;padding:16px;line-height:1.65;white-space:pre-wrap;outline-offset:2px;}
 .foro-bio-input:focus{outline:2px solid #0b80ae;}
 .foro-bio-input:empty:before{content:attr(data-placeholder);color:#74879b;pointer-events:none;}
+
+/* V34.2 · Foto opcional de autor */
+.article-body .foro-author-bio-content{display:flex;align-items:flex-start;gap:22px;}
+.article-body .foro-author-bio-photo{flex:0 0 112px;width:112px;margin:0;}
+.article-body .foro-bio-photo-large .foro-author-bio-photo{flex-basis:160px;width:160px;}
+.article-body .foro-author-bio-photo img{display:block;width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:4px;}
+.article-body .foro-author-bio-text{flex:1;min-width:0;}
+.article-body .foro-bio-photo-right .foro-author-bio-photo{order:2;}
+@media(max-width:600px){.article-body .foro-author-bio-content{gap:16px}.article-body .foro-author-bio-photo{flex-basis:82px;width:82px}.article-body .foro-bio-photo-large .foro-author-bio-photo{flex-basis:110px;width:110px}}

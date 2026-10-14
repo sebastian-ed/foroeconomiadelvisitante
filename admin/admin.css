@@ -220,3 +220,29 @@ dialog.foro-nested-dialog .foro-media-picker-dialog{max-height:min(90dvh,900px);
 
 .foro-bio-editor .foro-bio-input{font-family:inherit;font-size:16px;}
 .foro-bio-editor .foro-bio-toolbar button:hover{background:#e1f4fc;}
+
+/* V34.1 - campo de biografía siempre visible y editable */
+.foro-bio-editor .foro-bio-input[contenteditable="true"]{
+ display:block!important;box-sizing:border-box;width:100%;min-width:0;min-height:180px;
+ padding:16px 18px!important;margin:12px 0 14px!important;
+ background:#ffffff!important;color:#082d4c!important;border:1.5px solid #a9c0d1!important;
+ border-radius:7px!important;font:normal 16px/1.65 'DM Sans',Arial,sans-serif;
+ white-space:pre-wrap;overflow-wrap:anywhere;cursor:text;outline:none;
+}
+.foro-bio-editor .foro-bio-input[contenteditable="true"]:focus{border-color:#007da7!important;outline:3px solid rgba(0,138,181,.17)!important;}
+.foro-bio-editor .foro-bio-input[contenteditable="true"]:empty::before{content:attr(data-placeholder);color:#718697!important;pointer-events:none;}
+.foro-bio-editor .foro-bio-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:12px 0;}
+.foro-bio-editor .foro-bio-toolbar button,.foro-bio-editor .foro-bio-toolbar select{background:#f6fbff;color:#072c4b;border:1px solid #b5cbd9;border-radius:5px;min-height:36px;padding:6px 11px;cursor:pointer;font-size:13px;}
+.foro-bio-editor .foro-bio-toolbar button:focus-visible{outline:2px solid #007da7;}
+
+/* V34.2 · Selector y previsualización de fotografía para la firma */
+.foro-bio-photo-controls{border-top:1px solid #d5e3ec;margin-top:18px;padding-top:14px}
+.foro-bio-photo-controls h4{margin:0 0 12px;color:#082f54;font-size:15px}
+.foro-bio-photo-editor-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
+.foro-bio-photo-controls .field{margin-bottom:12px}
+.foro-bio-photo-preview{border:1px solid #bfd4e3;background:#f3f8fb;min-height:170px;padding:12px;display:flex;gap:12px;align-items:flex-start;color:#365670;font-size:13px;line-height:1.55}
+.foro-bio-photo-preview img{width:84px;aspect-ratio:4/5;object-fit:cover;flex:none;border-radius:4px}
+.foro-bio-photo-preview.foro-bio-preview-large img{width:112px}
+.foro-bio-photo-preview.foro-bio-preview-right img{order:2}
+.foro-bio-photo-preview>div{flex:1;min-width:0}
+@media(max-width:700px){.foro-bio-photo-editor-grid{grid-template-columns:1fr}}
