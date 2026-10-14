@@ -246,3 +246,10 @@ dialog.foro-nested-dialog .foro-media-picker-dialog{max-height:min(90dvh,900px);
 .foro-bio-photo-preview.foro-bio-preview-right img{order:2}
 .foro-bio-photo-preview>div{flex:1;min-width:0}
 @media(max-width:700px){.foro-bio-photo-editor-grid{grid-template-columns:1fr}}
+
+/* V36 — Importación editorial de documentos con recursos */
+.foro-import-preview-content figure{margin:1.25rem auto;max-width:100%;text-align:center}
+.foro-import-preview-content img{max-width:100%;height:auto;display:block;margin:auto;object-fit:contain}
+.foro-import-preview-content h3{font-size:1.4rem;line-height:1.25;margin:1.3rem 0 .65rem}
+.foro-import-preview-content p{white-space:normal;margin:.7rem 0;line-height:1.6}
+.foro-import-actions button:disabled{opacity:.5;cursor:progress}
