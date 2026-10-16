@@ -274,3 +274,6 @@ dialog.foro-nested-dialog .foro-media-picker-dialog{max-height:min(90dvh,900px);
 .foro-extra-photo-preview img{display:block;width:100px;height:118px;object-fit:cover;border-radius:5px}
 
 #peAuthorField[hidden]{display:none!important}.foro-byline-mode-help{margin:0;color:#54728a;font-size:12px;line-height:1.45}
+
+/* V44 · Gestión segura de colaboradores */
+.team-row{display:flex;align-items:center;justify-content:space-between;gap:1rem;border-bottom:1px solid #dbe3e9;padding:1rem .4rem;flex-wrap:wrap}.team-identity{display:flex;flex-direction:column;gap:.3rem;min-width:200px}.team-identity small{overflow-wrap:anywhere;color:#5d7486}.team-actions{display:flex;gap:.4rem;flex-wrap:wrap}.profile-dialog{width:min(560px,94vw);max-height:88vh;border:1px solid #d1dfe8;border-radius:14px;padding:1.7rem;color:#0a2d4b;background:#fff}.profile-dialog::backdrop{background:rgba(4,22,40,.55)}.profile-close{float:right}.profile-fields{display:grid;gap:1rem;margin:1rem 0}.profile-fields label{display:grid;gap:.4rem;font-size:.85rem;font-weight:650}.profile-fields input,.profile-fields textarea,.profile-fields select{width:100%;box-sizing:border-box;background:#fff;color:#0a2d4b;border:1px solid #b5cbd9;border-radius:6px;padding:.65rem;font:inherit}.profile-dialog p{overflow-wrap:anywhere}
