@@ -457,3 +457,20 @@ html body .article-body h2,html body .article-body h3,html body .article-body h4
 /* Biblioteca y recursos V37 */
 .resource-search-label{display:block;max-width:520px;font-size:13px;font-weight:700;color:#063e76;margin:20px 0 30px}
 .resource-search-label input{display:block;margin-top:9px;width:100%;padding:14px 16px;background:#fff;border:1px solid #a8c5d5;color:#052b4a;font:inherit;font-weight:400}
+
+/* V38 — únicamente nuevos bloques conceptuales de Inicio. */
+.concept-section .concept-lead{white-space:pre-line;line-height:1.65}
+.editorial-insight{background:var(--paper);border-top:1px solid var(--line)}
+.editorial-insight.insight-feature{background:var(--background)}
+.editorial-insight .insight-layout{display:grid;grid-template-columns:minmax(240px,.82fr) minmax(0,1.18fr);gap:clamp(28px,6vw,110px);align-items:start}
+.editorial-insight .insight-heading h2{font-family:var(--font-heading);font-size:clamp(37px,4.3vw,67px);line-height:1.06;max-width:650px;margin-top:18px}
+.editorial-insight .insight-copy{padding-top:13px;min-width:0}
+.editorial-insight .insight-paragraphs p{font-size:clamp(15px,1.2vw,18px);line-height:1.75;color:var(--text);margin:0 0 1.3em}
+.editorial-insight .insight-cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:30px}
+.editorial-insight .insight-card{border:1px solid var(--line);padding:clamp(18px,2.4vw,30px);background:var(--background);min-width:0}
+.editorial-insight .insight-card:nth-child(2){border-top:3px solid var(--cyan)}
+.editorial-insight .insight-card>span{display:block;font-size:10px;letter-spacing:.13em;color:var(--muted);margin-bottom:23px}
+.editorial-insight .insight-card h3{font-size:clamp(25px,2.4vw,34px)!important;line-height:1.14;margin-bottom:13px}
+.editorial-insight .insight-card p{font-size:14px;line-height:1.6;color:var(--text)}
+@media(max-width:860px){.editorial-insight .insight-layout{grid-template-columns:1fr;gap:20px}.editorial-insight .insight-copy{padding-top:0}}
+@media(max-width:560px){.editorial-insight .insight-cards{grid-template-columns:1fr}}

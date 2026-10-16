@@ -97,11 +97,39 @@ window.FORO_DEFAULT_CONTENT = {
       settings: { anchor: "economia-del-visitante" },
       content: {
         eyebrow: "UNA MIRADA MÁS AMPLIA",
-        title: "El visitante activa mucho más que turismo.",
-        body: "El desarrollo de un destino también involucra a la gastronomía, el comercio, la cultura, los eventos, el transporte, la tecnología, los servicios y la calidad del entorno urbano y natural.",
-        note: "La economía del visitante permite observar esas relaciones como un sistema y discutir mejores decisiones públicas, privadas y comunitarias."
+        title: "¿Qué es la economía del visitante?",
+        body: "La economía del visitante comprende mucho más que las actividades tradicionalmente asociadas al turismo. Integra los atractivos, la infraestructura, los servicios y las experiencias que hacen que un territorio sea elegido, recorrido y disfrutado por quienes lo visitan.\n\nSu desarrollo involucra a múltiples sectores económicos y actores del territorio, desde la gastronomía y el comercio hasta la cultura, la movilidad, la tecnología y la calidad de los espacios públicos.",
+        note: "Pensar la economía del visitante significa comprender al territorio como un sistema integrado, en el que sus atractivos, infraestructura, servicios e instituciones contribuyen a la experiencia de quienes lo visitan. Esta perspectiva permite articular decisiones públicas, privadas y comunitarias para generar mayor valor económico y social."
       },
       items: ["Gastronomía", "Comercio", "Cultura", "Eventos", "Transporte", "Tecnología", "Servicios", "Entorno y territorio"]
+    },
+    {
+      id: "turismo-vs-visitante",
+      type: "editorialInsight",
+      label: "Del turismo a la economía del visitante",
+      enabled: true,
+      settings: { anchor: "turismo-y-economia-del-visitante", variant: "comparison" },
+      content: {
+        eyebrow: "DOS MIRADAS COMPLEMENTARIAS",
+        title: "Del turismo a la economía del visitante",
+        body: "El turismo permite identificar y medir las actividades realizadas por quienes viajan. La economía del visitante propone ampliar esa mirada para comprender el conjunto de condiciones que hacen posible la experiencia de visitar un territorio.\n\nUn destino no depende únicamente de sus hoteles, excursiones o atractivos turísticos. También depende de la calidad de sus espacios públicos, su movilidad, su oferta cultural, sus comercios, sus servicios y la participación de sus instituciones y comunidades.\n\nPasar de una mirada sectorial a una perspectiva territorial permite comprender cómo estas actividades se relacionan y contribuyen al desarrollo económico y social.",
+        leftTitle: "Turismo",
+        leftBody: "Actividades de quienes viajan: desplazamientos, estadías y consumos vinculados al viaje.",
+        rightTitle: "Economía del visitante",
+        rightBody: "La experiencia en su conjunto: atractivos, infraestructura, servicios, actores y calidad del territorio."
+      }
+    },
+    {
+      id: "conocer-al-visitante",
+      type: "editorialInsight",
+      label: "Conocer al visitante para desarrollar el territorio",
+      enabled: true,
+      settings: { anchor: "conocer-al-visitante", variant: "feature" },
+      content: {
+        eyebrow: "INFORMACIÓN PARA DECIDIR",
+        title: "Conocer al visitante para desarrollar el territorio",
+        body: "Comprender quiénes visitan un territorio, qué buscan, cómo se desplazan y qué experiencias valoran permite tomar mejores decisiones.\n\nEl análisis de información ayuda a identificar oportunidades, orientar inversiones, mejorar servicios y desarrollar experiencias que respondan a las necesidades de los distintos públicos.\n\nEl desafío no consiste solamente en atraer más visitantes, sino en generar mayor valor a través de experiencias de calidad que beneficien al territorio y sus comunidades."
+      }
     },
     {
       id: "pilares",
@@ -268,3 +296,34 @@ window.FORO_STARTER_POSTS = [
     seo_description: "Canal abierto para enviar artículos, investigaciones, temas y desafíos territoriales al Foro."
   }
 ];
+
+// V38: incorporación conservadora al contenido guardado anteriormente en Supabase.
+// No cambia textos personalizados ni vuelve a crear bloques eliminados luego de publicar V38.
+window.FORO_UPGRADE_CONTENT_V38 = function upgradeContentV38(data) {
+  if (!data || !Array.isArray(data.sections)) return data;
+  data.site ||= {};
+  if (data.site.contentRevision38) return data;
+  const old = data.sections.find(s => s.id === 'concepto');
+  const current = window.FORO_DEFAULT_CONTENT.sections.find(s => s.id === 'concepto');
+  const oldTexts = {
+    title: 'El visitante activa mucho más que turismo.',
+    body: 'El desarrollo de un destino también involucra a la gastronomía, el comercio, la cultura, los eventos, el transporte, la tecnología, los servicios y la calidad del entorno urbano y natural.',
+    note: 'La economía del visitante permite observar esas relaciones como un sistema y discutir mejores decisiones públicas, privadas y comunitarias.'
+  };
+  if (old?.content) for (const key of Object.keys(oldTexts)) {
+    if (old.content[key] === oldTexts[key]) old.content[key] = current.content[key];
+  }
+  const start = data.sections.findIndex(s => s.id === 'concepto');
+  if (start !== -1) {
+    let position = start + 1;
+    for (const id of ['turismo-vs-visitante','conocer-al-visitante']) {
+      if (!data.sections.some(s => s.id === id)) {
+        const block = window.FORO_DEFAULT_CONTENT.sections.find(s => s.id === id);
+        data.sections.splice(position,0,structuredClone(block));
+      }
+      position++;
+    }
+  }
+  data.site.contentRevision38 = true;
+  return data;
+};

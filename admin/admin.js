@@ -40,6 +40,7 @@
   const typeMeta={
     heroForum:['◎','Hero institucional','Propuesta central, CTA y ecosistema visual.'],
     conceptStatement:['◫','Concepto','Explica la economía del visitante y sus sectores.'],
+    editorialInsight:['▤','Bloque conceptual','Texto editorial y comparación de perspectivas.'],
     pillars:['Ⅲ','Pilares','Conocimiento, Encuentro y Acción.'],
     collectionFeed:['¶','Publicaciones','Feed dinámico de Conocimiento.'],
     activitiesFeed:['◷','Agenda','Próximas actividades confirmadas.'],
@@ -901,7 +902,7 @@
   function reloadVisual(){const f=$('#visualFrame');f.src=visualUrl()}
   function refreshPreview(){const f=$('#previewFrame');f.src=`../index.html?cms_live_preview=1&t=${Date.now()}`}
 
-  async function loadInitial(){try{const remote=await db.loadSiteContent();state=remote?migrateLegacyPalette(mergeDeep(clone(defaults),remote)):clone(defaults);clearDirty();await Promise.all([loadPosts(),loadEvents(),loadMedia(),loadInquiries(),loadNewsletter(),loadHistory()]);renderAll();pushPreview()}catch(e){toast('Error cargando CMS: '+e.message)}}
+  async function loadInitial(){try{const remote=await db.loadSiteContent();state=remote?window.FORO_UPGRADE_CONTENT_V38(migrateLegacyPalette(mergeDeep(clone(defaults),remote))):clone(defaults);clearDirty();await Promise.all([loadPosts(),loadEvents(),loadMedia(),loadInquiries(),loadNewsletter(),loadHistory()]);renderAll();pushPreview()}catch(e){toast('Error cargando CMS: '+e.message)}}
   async function applyRoleAccess(){try{const {data:{user}}=await db.client.auth.getUser();const {data}=await db.client.from('cms_profiles').select('role').eq('user_id',user.id).maybeSingle();if(!data?.role){toast('Este usuario no tiene acceso al CMS');await db.client.auth.signOut();return;}myRole=data.role;$$('[data-view="users"]').forEach(el=>el.style.display=myRole==='admin'?'':'none');const allowed=myRole==='admin'?null:myRole==='editor'?['dashboard','posts','events','media','visual','preview','pages','home','resources']:['dashboard','posts','media','preview'];$$('[data-view]',document).forEach(el=>{if(allowed&&!allowed.includes(el.dataset.view))el.style.display='none'});if(myRole!=='admin')$('#publishSite').style.display='none';$('#userRoleLabel').textContent='Rol: '+myRole}catch(e){console.warn('No fue posible determinar el rol',e)}}
   async function setSession(session){const logged=Boolean(session?.user);$('#authScreen').classList.toggle('hidden',logged);if(logged){$('#userEmail').textContent=session.user.email||'Usuario';$('#accountButton').textContent=(session.user.email||'A')[0].toUpperCase();await loadInitial();await applyRoleAccess()}}
   async function boot(){

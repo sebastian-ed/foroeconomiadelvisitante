@@ -317,6 +317,13 @@
     return `<section class="section concept-section" id="${attr(s.settings?.anchor||s.id)}" data-section-index="${i}"><div class="shell concept-grid"><div>${editable('span',c.eyebrow,`sections.${i}.content.eyebrow`,'eyebrow')}${editable('h2',c.title,`sections.${i}.content.title`)}${editable('p',c.body,`sections.${i}.content.body`,'concept-lead')}${editable('p',c.note,`sections.${i}.content.note`,'concept-note')}</div><div class="sector-matrix">${(s.items||[]).map((x,j)=>`<div class="sector-item">${s.itemMedia?.[j]?.src?`<div class="sector-item-media">${mediaHtml(s.itemMedia[j],'','sector-item-image')}</div>`:''}<span>${String(j+1).padStart(2,'0')}</span>${editable('strong',x,`sections.${i}.items.${j}`)}</div>`).join('')}</div></div></section>`;
   }
 
+  function renderEditorialInsight(s,i) {
+    const c=s.content||{}, path=`sections.${i}.content`;
+    const paras=String(c.body||'').split(/\n\s*\n/).filter(Boolean).map((p,j)=>editable('p',p,`${path}.body`,'insight-paragraph')).join('');
+    const comparison=s.settings?.variant==='comparison';
+    return `<section class="section editorial-insight ${comparison?'insight-comparison':'insight-feature'}" id="${attr(s.settings?.anchor||s.id)}" data-section-index="${i}"><div class="shell insight-layout"><div class="insight-heading">${editable('span',c.eyebrow,`${path}.eyebrow`,'eyebrow')}${editable('h2',c.title,`${path}.title`)}</div><div class="insight-copy"><div class="insight-paragraphs" data-cms-path="${attr(path+'.body')}" ${inlineMode?'contenteditable="true" spellcheck="true"':''}>${String(c.body||'').split(/\n\s*\n/).filter(Boolean).map(p=>`<p>${esc(p)}</p>`).join('')}</div>${comparison?`<div class="insight-cards"><div class="insight-card"><span>01 / ENFOQUE</span>${editable('h3',c.leftTitle,`${path}.leftTitle`)}${editable('p',c.leftBody,`${path}.leftBody`)}</div><div class="insight-card"><span>02 / ENFOQUE</span>${editable('h3',c.rightTitle,`${path}.rightTitle`)}${editable('p',c.rightBody,`${path}.rightBody`)}</div></div>`:''}</div></div></section>`;
+  }
+
   function renderPillars(s,i) {
     return `<section class="section pillars-section" id="${attr(s.settings?.anchor||s.id)}" data-section-index="${i}"><div class="shell">${sectionHead(s,i)}<div class="pillar-grid">${(s.items||[]).map((x,j)=>`<a class="pillar-card" href="${attr(x.href||'#')}"><div class="pillar-number">${esc(x.number)}</div>${editable('h3',x.title,`sections.${i}.items.${j}.title`)}${editable('p',x.body,`sections.${i}.items.${j}.body`)}<span class="arrow">↗</span></a>`).join('')}</div></div></section>`;
   }
@@ -368,7 +375,7 @@
   }
 
   function renderHome() {
-    const renderers = {heroForum:renderHero,conceptStatement:renderConcept,pillars:renderPillars,collectionFeed:(s,i)=>renderCollection(s,i,'knowledge'),activitiesFeed:renderActivities,voicesFeed:(s,i)=>renderCollection(s,i,'voices'),joinCta:renderJoin};
+    const renderers = {heroForum:renderHero,conceptStatement:renderConcept,editorialInsight:renderEditorialInsight,pillars:renderPillars,collectionFeed:(s,i)=>renderCollection(s,i,'knowledge'),activitiesFeed:renderActivities,voicesFeed:(s,i)=>renderCollection(s,i,'voices'),joinCta:renderJoin};
     $('#main').innerHTML = (state.sections||[]).map((s,i)=>{if(s.enabled===false)return '';let html=renderers[s.type]?.(s,i)||'';if(s.type!=='heroForum'&&s.media?.src){const visual=`<div class="cms-section-media">${mediaHtml(s.media,'','cms-section-media-content')}</div>`;html=html.replace(/(<section\b[^>]*>)/,`$1${visual}`)}if(s.extraHtml){const extra=`<div class="shell cms-extra-content article-body">${sanitizeRichHtml(s.extraHtml)}</div>`;html=html.replace(/<\/section>\s*$/,extra+'</section>')}return html}).join('');
   }
 
@@ -654,7 +661,7 @@
     if (m.type==='foro:cms-preview' && m.payload) {
       if(Array.isArray(m.posts))posts=m.posts;
       if(Array.isArray(m.events))events=m.events;
-      state=mergeDeep(structuredClone(defaults),m.payload);
+      state=window.FORO_UPGRADE_CONTENT_V38(mergeDeep(structuredClone(defaults),m.payload));
       const focused=document.activeElement;
       if(inlineMode && focused?.isContentEditable && focused.matches('[data-cms-path]')){
         // Never replace a live contenteditable node during typing.
@@ -671,7 +678,7 @@
     try {
       if (db.configured) {
         const [remote,remotePosts,remoteEvents] = await Promise.all([previewMode?Promise.resolve(null):db.loadSiteContent(),db.listPosts({limit:250}),db.listEvents({limit:250})]);
-        if (remote && !previewMode) state=migrateLegacyPalette(mergeDeep(structuredClone(defaults),remote));
+        if (remote && !previewMode) state=window.FORO_UPGRADE_CONTENT_V38(migrateLegacyPalette(mergeDeep(structuredClone(defaults),remote)));
         if (Array.isArray(remotePosts)) posts=remotePosts;
         if (Array.isArray(remoteEvents)) events=remoteEvents;
       }
