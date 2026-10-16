@@ -1,3 +1,7 @@
 User-agent: *
 Allow: /
 Disallow: /admin/
+Disallow: /test-local.html
+Disallow: /buscar.html
+
+Sitemap: https://foroeconomiadelvisitante.com.ar/sitemap.xml

@@ -194,7 +194,25 @@
     $('#ogTitle')?.setAttribute('content', title);
     $('#ogDescription')?.setAttribute('content', description);
     $('#ogImage')?.setAttribute('content', new URL(meta.image || site.seo?.image || site.logo, location.href).href);
-    $('#canonical')?.setAttribute('href', location.href.split('?')[0]);
+    const isPost = page === 'post', isEvent = page === 'event';
+    const slug = (isPost || isEvent) ? qs.get('slug') : null;
+    const canonicalUrl = new URL(location.pathname, location.origin);
+    if (slug && (isPost || isEvent)) canonicalUrl.searchParams.set('slug', slug);
+    if (page === 'home') canonicalUrl.pathname = '/';
+    $('#canonical')?.setAttribute('href', canonicalUrl.href);
+    document.querySelector('meta[property="og:url"]')?.setAttribute('content', canonicalUrl.href);
+    const robots = document.querySelector('#seoRobots');
+    if (robots && ((isPost && posts.some(p=>p.slug===slug)) || (isEvent && events.some(e=>e.slug===slug)))) {
+      robots.setAttribute('content', 'index,follow,max-image-preview:large');
+    }
+    const schemaEl = document.getElementById('dynamicStructuredData');
+    if (schemaEl) schemaEl.remove();
+    if (meta.schema) {
+      const script=document.createElement('script');
+      script.type='application/ld+json'; script.id='dynamicStructuredData';
+      script.textContent=JSON.stringify(meta.schema).replace(/</g,'\\u003c');
+      document.head.appendChild(script);
+    }
   }
 
   function renderHeader() {
@@ -467,11 +485,17 @@
     catch (err) { console.warn(err); status.textContent='No se pudo enviar. Intentá nuevamente o escribí por email.'; }
   }
 
+  function setMissingPageNoindex() {
+    let node=document.querySelector('meta[name="robots"]');
+    if (!node) { node=document.createElement('meta');node.name='robots';document.head.appendChild(node) }
+    node.content='noindex,follow';
+  }
+
   function renderPostPage() {
     const slug=qs.get('slug')||'';
     let p=posts.find(x=>x.slug===slug);
-    if (!p) { $('#main').innerHTML=notFound('Publicación no encontrada'); return; }
-    applySeo({title:p.seo_title||`${p.title} — ${state.site.shortName}`,description:p.seo_description||p.excerpt,image:p.featured_image||state.site.seo?.image});
+    if (!p) { setMissingPageNoindex(); $('#main').innerHTML=notFound('Publicación no encontrada'); return; }
+    applySeo({title:p.seo_title||`${p.title} — ${state.site.shortName}`,description:p.seo_description||p.excerpt,image:p.featured_image||state.site.seo?.image,schema:{'@context':'https://schema.org','@type':'Article',headline:p.title,description:p.seo_description||p.excerpt||'',inLanguage:'es-AR',mainEntityOfPage:new URL(`articulo.html?slug=${encodeURIComponent(p.slug)}`,location.href).href,datePublished:p.published_at||undefined,dateModified:p.updated_at||p.published_at||undefined,author:{'@type':'Person',name:p.author_name||state.site.shortName},publisher:{'@type':'Organization',name:state.site.name,url:location.origin},...(p.featured_image?{image:[new URL(p.featured_image,location.href).href]}:{})}});
     const refs = Array.isArray(p.references) ? p.references : [];
     $('#main').innerHTML = `<article class="article-page"><header class="article-header"><div class="shell article-head-grid"><div><div class="article-kicker"><span>${esc(typeNames[p.type]||p.category||'Publicación')}</span><time>${esc(fmtDate(p.published_at,true))}</time></div><h1>${esc(p.title)}</h1><div class="article-byline">Escrito por: <strong>${esc(p.author_name||state.site.shortName)}</strong>${p.author_role?`<span> · ${esc(p.author_role)}</span>`:''}</div><div class="article-excerpt excerpt-paragraphs">${excerptParagraphs(p.excerpt)}</div></div></div></header><div class="shell article-layout"><aside><span>CONTENIDO</span><a href="#articulo">Artículo</a>${refs.length?'<a href="#fuentes">Fuentes</a>':''}<a href="participa.html">Enviar un aporte</a></aside><div class="article-body" id="articulo">${sanitizeRichHtml(p.content_html||'')}${refs.length?`<div class="references" id="fuentes"><h2>Fuentes y referencias</h2><ol>${refs.map(r=>`<li>${esc(r)}</li>`).join('')}</ol></div>`:''}</div></div></article>`;
     const excerptPhoto=$('#articulo figure.foro-image-excerpt-right');
@@ -492,8 +516,8 @@
 
   function renderEventPage() {
     const slug=qs.get('slug')||''; const e=events.find(x=>x.slug===slug);
-    if (!e) { $('#main').innerHTML=notFound('Actividad no encontrada'); return; }
-    applySeo({title:e.seo_title||`${e.title} — ${state.site.shortName}`,description:e.seo_description||e.excerpt,image:e.featured_image||state.site.seo?.image});
+    if (!e) { setMissingPageNoindex(); $('#main').innerHTML=notFound('Actividad no encontrada'); return; }
+    applySeo({title:e.seo_title||`${e.title} — ${state.site.shortName}`,description:e.seo_description||e.excerpt,image:e.featured_image||state.site.seo?.image,schema:{'@context':'https://schema.org','@type':'Event',name:e.title,description:e.seo_description||e.excerpt||'',startDate:e.starts_at||undefined,endDate:e.ends_at||undefined,eventAttendanceMode:e.mode?.toLowerCase().includes('virtual')?'https://schema.org/OnlineEventAttendanceMode':'https://schema.org/OfflineEventAttendanceMode',url:new URL(`actividad.html?slug=${encodeURIComponent(e.slug)}`,location.href).href,organizer:{'@type':'Organization',name:state.site.name,url:location.origin}}});
     $('#main').innerHTML = `<article class="event-page"><header class="article-header event-detail"><div class="shell article-head-grid"><div><div class="article-kicker"><span>${esc(e.event_type||'Actividad')}</span><time>${esc(fmtDate(e.starts_at,true))}</time></div><h1>${esc(e.title)}</h1><div class="article-excerpt excerpt-paragraphs">${excerptParagraphs(e.excerpt)}</div><div class="event-facts"><div><span>Fecha y hora</span><strong>${esc(e.starts_at?new Intl.DateTimeFormat('es-AR',{dateStyle:'long',timeStyle:'short'}).format(new Date(e.starts_at)):'A confirmar')}</strong></div><div><span>Modalidad / lugar</span><strong>${esc(e.location||e.mode||'A confirmar')}</strong></div></div></div>${e.featured_image?`<div class="article-image" style="background-image:url('${attr(e.featured_image)}')"></div>`:`<div class="article-cover-abstract"><img src="${attr(state.site.icon)}" alt=""><span>ENCUENTRO</span></div>`}</div></header><div class="shell article-layout"><aside><span>ACTIVIDAD</span><a href="#detalle">Detalle</a>${e.registration_enabled?'<a href="#inscripcion">Inscripción</a>':''}<a href="actividades.html">Volver a agenda</a></aside><div class="article-body" id="detalle">${sanitizeRichHtml(e.content_html||'')}${e.registration_enabled?`<div class="registration-box" id="inscripcion"><h2>Inscripción</h2><p>${esc(e.registration_note||'Completá tus datos para registrar tu interés en esta actividad.')}</p><form id="eventRegistration" class="public-form compact"><input type="hidden" name="event_id" value="${attr(e.id)}"><div class="form-row"><label>Nombre<input name="name" required></label><label>Email<input name="email" type="email" required></label></div><label>Organización<input name="organization"></label><button class="btn primary" type="submit">Registrarme</button><p class="form-status" id="eventStatus"></p></form></div>`:''}</div></div></article>`;
     $('#eventRegistration')?.addEventListener('submit', async ev=>{
       ev.preventDefault(); const st=$('#eventStatus'); if(!db.configured){st.textContent='La inscripción quedará habilitada al conectar Supabase.';return;}try{st.textContent='Registrando…';await db.registerEvent(Object.fromEntries(new FormData(ev.currentTarget)));ev.currentTarget.reset();st.textContent='Inscripción registrada.';}catch(err){st.textContent='No se pudo registrar. Intentá nuevamente.';console.warn(err);}
