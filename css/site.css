@@ -484,3 +484,5 @@ html body .article-body h2,html body .article-body h3,html body .article-body h4
 .article-body .foro-byline-hidden{display:none!important}
 .article-body .foro-author-bio-extra{display:block;clear:both}
 .article-body .foro-author-bio-extra.foro-author-bio-hidden{display:none!important}
+
+.article-body .foro-author-bio:not(.foro-author-bio-extra) .foro-author-bio-name{font-size:20px;line-height:1.35;color:#082e4f;margin:0 0 12px}

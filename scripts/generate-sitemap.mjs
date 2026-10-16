@@ -1,11 +1,16 @@
 /** Build XML sitemap. Optionally include public posts and events from Supabase REST. */
-import {writeFileSync} from 'node:fs';
+import {writeFileSync,readFileSync} from 'node:fs';
 const BASE='https://foroeconomiadelvisitante.com.ar';
 const staticPaths=['/','/el-foro.html','/conocimiento.html','/biblioteca-recursos.html','/actividades.html','/voces.html','/participa.html','/newsletter.html'];
 const urls=new Map(staticPaths.map(p=>[BASE+p,null]));
 const esc=s=>String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&apos;');
-const host=process.env.SUPABASE_URL;
-const anon=process.env.SUPABASE_ANON_KEY;
+// The site already publishes these two non-privileged values to browser clients.
+// GitHub Actions secrets can override the public config, but are not mandatory.
+const publicConfig=readFileSync(new URL('../js/supabase-config.js',import.meta.url),'utf8');
+const getPublicValue=key=>publicConfig.match(new RegExp('\\b'+key+'\\s*:\\s*[\"\']([^\"\']+)[\"\']'))?.[1];
+const host=process.env.SUPABASE_URL||getPublicValue('url');
+const anon=process.env.SUPABASE_ANON_KEY||getPublicValue('anonKey');
+if(!host||!anon){console.error('No hay configuración pública de Supabase. Configurá SUPABASE_URL y SUPABASE_ANON_KEY o js/supabase-config.js.');process.exit(1)}
 async function fetchCollection(table,columns,dateColumn,path){
  if(!host||!anon){console.log(`Skipping dynamic ${table}: SUPABASE_URL / SUPABASE_ANON_KEY missing`);return}
  let offset=0, limit=500, total=0;
@@ -17,7 +22,7 @@ async function fetchCollection(table,columns,dateColumn,path){
   url.searchParams.set('order','created_at.asc');
   url.searchParams.set('limit',String(limit));url.searchParams.set('offset',String(offset));
   const res=await fetch(url,{headers:{apikey:anon,Authorization:`Bearer ${anon}`}});
-  if(!res.ok)throw new Error(`Supabase ${table}: HTTP ${res.status}: ${(await res.text()).slice(0,300)}`);
+  if(!res.ok)throw new Error(`No se pudo consultar ${table} en Supabase (HTTP ${res.status}). Verificá permisos SELECT para anon y nombres de columnas: ${(await res.text()).slice(0,500)}`);
   const rows=await res.json();
   for(const item of rows){if(!item.slug)continue;const u=new URL(path,BASE);u.searchParams.set('slug',item.slug);const last=item.updated_at||item[dateColumn]||null;urls.set(u.href,last)}
   total+=rows.length; offset+=limit;
