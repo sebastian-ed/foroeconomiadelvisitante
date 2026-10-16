@@ -474,3 +474,8 @@ html body .article-body h2,html body .article-body h3,html body .article-body h4
 .editorial-insight .insight-card p{font-size:14px;line-height:1.6;color:var(--text)}
 @media(max-width:860px){.editorial-insight .insight-layout{grid-template-columns:1fr;gap:20px}.editorial-insight .insight-copy{padding-top:0}}
 @media(max-width:560px){.editorial-insight .insight-cards{grid-template-columns:1fr}}
+
+/* V40: autores múltiples. Un autor conserva el diseño original. */
+.article-body .foro-author-bio-extra{margin-top:22px;padding-top:22px}
+.article-body .foro-author-bio-extra .foro-author-bio-name{font-size:20px;line-height:1.3;margin:0 0 5px;color:#082e4f}
+.article-body .foro-author-bio-role{font-size:13px;color:#506b7e;margin:0 0 13px}

@@ -513,7 +513,10 @@
     const excerptPhotoUrl=storedExcerptPhoto?.getAttribute('src')||'';
     const bodyWithoutExcerpt=(p.content_html||'').replace(/<figure\b(?=[^>]*\bforo-image-excerpt-right\b)[^>]*>[\s\S]*?<\/figure>/gi,'');
     const bioDoc=new DOMParser().parseFromString(p.content_html||'','text/html');
-    const existingBio=bioDoc.querySelector('.foro-author-bio');
+    const existingBio=bioDoc.querySelector('.foro-author-bio:not(.foro-author-bio-extra)');
+    const extraBioNodes=[...bioDoc.querySelectorAll('.foro-author-bio-extra')];
+    const savedAuthorParts=(p.author_name||'').split(' · ');
+    if(extraBioNodes.length && savedAuthorParts.length>1)p.author_name=savedAuthorParts[0];
     const bioInitial=existingBio?.querySelector('.foro-author-bio-text')?.innerHTML||'';
     const bioVisible=!!existingBio&&!existingBio.classList.contains('foro-author-bio-hidden');
     const bioImageUrl=existingBio?.querySelector('.foro-author-bio-photo img')?.getAttribute('src')||'';
@@ -533,6 +536,33 @@
     bioCard.innerHTML=`<h3>Biografía del autor · firma final</h3><p>Opcional. Se muestra al terminar el artículo; podés ocultarla sin borrar el texto.</p><label class="field check-field"><input type="checkbox" id="peBioVisible" ${bioVisible?'checked':''}><span>Mostrar biografía al final de esta publicación</span></label><div class="foro-bio-toolbar"><button type="button" data-bio-cmd="bold" title="Negrita"><b>B</b></button><button type="button" data-bio-cmd="italic" title="Cursiva"><i>I</i></button><button type="button" data-bio-cmd="underline" title="Subrayado"><u>U</u></button><select id="peBioAlign" aria-label="Alineación"><option value="left">Izquierda</option><option value="center">Centrada</option><option value="right">Derecha</option></select><select id="peBioSize" aria-label="Tamaño"><option value="">Tamaño normal</option><option value="14">14 px</option><option value="16">16 px</option><option value="18">18 px</option><option value="20">20 px</option></select><button type="button" id="peBioClear">Eliminar texto</button></div><label for="peBioText" class="foro-bio-label">Escribí la biografía del autor</label><div id="peBioText" class="foro-bio-input" contenteditable="true" role="textbox" aria-multiline="true" tabindex="0" aria-label="Biografía editable" data-placeholder="Breve presentación profesional del autor...">${bioInitial}</div><small>Podés seleccionar palabras para aplicar negrita, cursiva o subrayado. La previsualización se actualiza automáticamente.</small><div class="foro-bio-photo-controls"><h4>Foto del autor · opcional</h4><div class="foro-bio-photo-editor-grid"><div><label class="field check-field"><input type="checkbox" id="peBioPhotoVisible" ${bioImageUrl?'checked':''}><span>Mostrar foto en la biografía</span></label><div class="foro-featured-actions"><button type="button" class="btn ghost" id="peBioChoosePhoto">Elegir o subir foto</button><button type="button" class="btn ghost" id="peBioRemovePhoto">Quitar foto</button></div><label class="field"><span>Posición</span><select id="peBioPhotoSide"><option value="left" ${bioPhotoSide==='left'?'selected':''}>A la izquierda del texto</option><option value="right" ${bioPhotoSide==='right'?'selected':''}>A la derecha del texto</option></select></label><label class="field"><span>Tamaño</span><select id="peBioPhotoSize"><option value="normal" ${bioPhotoSize==='normal'?'selected':''}>Retrato compacto</option><option value="large" ${bioPhotoSize==='large'?'selected':''}>Retrato amplio</option></select></label></div><div><div class="foro-bio-photo-preview" id="peBioPhotoPreview"></div><small>Vista previa de la ficha; podés cambiar la foto y su disposición antes de guardar.</small></div></div><input id="peBioPhotoUrl" type="hidden" value="${esc(bioImageUrl)}"></div>`;
     const authorCard=$('#peAuthor')?.closest('.editor-card');
     (authorCard||excerptPanel).after(bioCard);
+    // V40: autores adicionales; el formulario original permanece como autor principal.
+    const additionalAuthors=document.createElement('section');
+    additionalAuthors.className='foro-additional-authors';
+    additionalAuthors.innerHTML='<div class="foro-additional-head"><h4>Otros autores (opcional)</h4><button type="button" class="btn ghost" id="peAddAuthor">+ Agregar autor</button></div><p>Si el artículo tiene más firmas, agregalas acá. Cada persona puede tener su propia foto y biografía.</p><div id="peExtraAuthors"></div>';
+    bioCard.append(additionalAuthors);
+    const extraHost=additionalAuthors.querySelector('#peExtraAuthors');
+    function appendExtraAuthor(record={}){
+      const card=document.createElement('div');card.className='foro-extra-author-editor';
+      card.innerHTML=`<div class="foro-additional-head"><strong>Autor adicional</strong><button type="button" class="btn ghost" data-remove-author>Quitar autor</button></div><label class="field"><span>Nombre (aparece en «Escrito por»)</span><input type="text" class="extra-author-name" value="${esc(record.name||'')}"></label><label class="field"><span>Profesión / organización (opcional)</span><input type="text" class="extra-author-role" value="${esc(record.role||'')}"></label><label class="field check-field"><input type="checkbox" class="extra-author-visible" ${record.visible?'checked':''}><span>Mostrar biografía de esta persona</span></label><label class="field"><span>Biografía</span><div class="foro-bio-input extra-author-bio" contenteditable="true" role="textbox" aria-multiline="true" data-placeholder="Trayectoria profesional (opcional)">${record.html||''}</div></label><div class="foro-featured-actions"><button class="btn ghost" type="button" data-extra-photo>Elegir o subir foto</button><button class="btn ghost" type="button" data-extra-remove-photo>Quitar foto</button></div><label class="field check-field"><input type="checkbox" class="extra-photo-visible" ${record.photoVisible?'checked':''}><span>Mostrar fotografía</span></label><div class="foro-extra-photo-preview"></div><input class="extra-photo-url" type="hidden" value="${esc(record.photo||'')}">`;
+      extraHost.append(card);
+      const preview=card.querySelector('.foro-extra-photo-preview');
+      const update=()=>{const url=card.querySelector('.extra-photo-url').value;preview.replaceChildren();if(url){const img=document.createElement('img');img.src=url;img.alt='Vista previa de la fotografía';preview.append(img)}else preview.textContent='Sin fotografía';renderLivePostPreview()};
+      card.querySelector('[data-remove-author]').onclick=()=>{card.remove();renderLivePostPreview()};
+      card.querySelector('[data-extra-photo]').onclick=()=>chooseRichMedia('image',url=>{card.querySelector('.extra-photo-url').value=url;card.querySelector('.extra-photo-visible').checked=true;update()});
+      card.querySelector('[data-extra-remove-photo]').onclick=()=>{card.querySelector('.extra-photo-url').value='';card.querySelector('.extra-photo-visible').checked=false;update()};
+      card.querySelectorAll('input,.extra-author-bio').forEach(el=>el.addEventListener('input',renderLivePostPreview));
+      update();
+    }
+    $('#peAddAuthor').onclick=()=>appendExtraAuthor({visible:true});
+    extraBioNodes.forEach((el,i)=>appendExtraAuthor({
+      name:el.querySelector('.foro-author-bio-name')?.textContent?.trim()||savedAuthorParts[i+1]||'',
+      role:el.querySelector('.foro-author-bio-role')?.textContent?.trim()||'',
+      html:el.querySelector('.foro-author-bio-text')?.innerHTML||'',
+      visible:!el.classList.contains('foro-author-bio-hidden'),
+      photo:el.querySelector('.foro-author-bio-photo img')?.getAttribute('src')||'',
+      photoVisible:!!el.querySelector('.foro-author-bio-photo img')
+    }));
     bioCard.querySelectorAll('[data-bio-cmd]').forEach(b=>b.addEventListener('mousedown',e=>e.preventDefault()));
     bioCard.querySelectorAll('[data-bio-cmd]').forEach(b=>b.onclick=()=>{document.getElementById('peBioText').focus();document.execCommand(b.dataset.bioCmd,false,null);renderLivePostPreview()});
     $('#peBioAlign').onchange=e=>{$('#peBioText').style.textAlign=e.target.value;renderLivePostPreview()};
@@ -572,6 +602,13 @@
   }
 
   function cleanEditorHtml(ed){if(!ed)return '';const copy=ed.cloneNode(true);copy.querySelectorAll('.foro-block-check').forEach(el=>el.remove());copy.querySelectorAll('.is-selected,.foro-multi-selected,.is-dragging').forEach(el=>el.classList.remove('is-selected','foro-multi-selected','is-dragging'));copy.querySelectorAll('[contenteditable],[draggable],[tabindex]').forEach(el=>{el.removeAttribute('contenteditable');el.removeAttribute('draggable');el.removeAttribute('tabindex')});return copy.innerHTML}
+  function extraAuthorRecords(){return [...document.querySelectorAll('#peExtraAuthors .foro-extra-author-editor')].map(card=>({name:card.querySelector('.extra-author-name').value.trim(),role:card.querySelector('.extra-author-role').value.trim(),visible:card.querySelector('.extra-author-visible').checked,html:card.querySelector('.extra-author-bio').innerHTML,photo:card.querySelector('.extra-photo-url').value.trim(),photoVisible:card.querySelector('.extra-photo-visible').checked})).filter(r=>r.name)}
+  function publicationAuthorNames(){return [$('#peAuthor')?.value.trim(),...extraAuthorRecords().map(r=>r.name)].filter(Boolean).join(' · ')}
+  function extraAuthorHtml(){return extraAuthorRecords().map(r=>{
+    const safeHtml=document.createElement('div');safeHtml.innerHTML=r.html;safeHtml.querySelectorAll('script,style,iframe,object,form').forEach(el=>el.remove());safeHtml.querySelectorAll('*').forEach(el=>[...el.attributes].forEach(a=>{if(/^on/i.test(a.name))el.removeAttribute(a.name)}));
+    const text=safeHtml.textContent.trim();const photo=r.photoVisible&&/^https?:\/\//i.test(r.photo)?`<figure class="foro-author-bio-photo"><img src="${esc(r.photo)}" alt="Fotografía de ${esc(r.name)}" loading="lazy"></figure>`:'';
+    return `<div class="foro-author-bio foro-author-bio-extra ${r.visible&&text?'':'foro-author-bio-hidden'} ${photo?'foro-bio-photo-left foro-bio-photo-normal':''}"><h2>Sobre el autor</h2><h3 class="foro-author-bio-name">${esc(r.name)}</h3>${r.role?`<p class="foro-author-bio-role">${esc(r.role)}</p>`:''}<div class="foro-author-bio-content">${photo}<div class="foro-author-bio-text">${safeHtml.innerHTML}</div></div></div>`;
+  }).join('')}
   function authorBioHtml(){
     const ed=$('#peBioText');if(!ed)return '';
     const text=(ed.textContent||'').trim();if(!text)return '';
@@ -584,7 +621,7 @@
     const dimension=$('#peBioPhotoSize')?.value==='large'?'foro-bio-photo-large':'foro-bio-photo-normal';
     return `<div class="foro-author-bio ${$('#peBioVisible')?.checked?'':'foro-author-bio-hidden'} ${src?side+' '+dimension:''}"><h2>Sobre el autor</h2><div class="foro-author-bio-content">${src}<div class="foro-author-bio-text" style="${align}${size}">${clean.innerHTML}</div></div></div>`;
   }
-  function draftPostSnapshot(){return {title:$('#peTitle')?.value||'',excerpt:$('#peExcerpt')?.value||'',content_html:cleanEditorHtml($('[data-rich-editor]',$('#postEditorBody')))+authorBioHtml(),featured_image:$('#peImage')?.value||'',author_name:$('#peAuthor')?.value||'',category:$('#peCategory')?.value||'',status:$('#peStatus')?.value||'draft'}}
+  function draftPostSnapshot(){return {title:$('#peTitle')?.value||'',excerpt:$('#peExcerpt')?.value||'',content_html:cleanEditorHtml($('[data-rich-editor]',$('#postEditorBody')))+authorBioHtml()+extraAuthorHtml(),featured_image:$('#peImage')?.value||'',author_name:publicationAuthorNames(),category:$('#peCategory')?.value||'',status:$('#peStatus')?.value||'draft'}}
   // V20: reconstruir los párrafos sin perder los saltos originales del textarea.
   function excerptParagraphsPreview(value){
     const normalized=String(value||'').replace(/\r\n?/g,'\n');
@@ -610,7 +647,7 @@
     .article-body figure.foro-gallery-item:first-child::after{content:'Carrusel · otras imágenes al desplazar';display:block;font:12px Arial;color:#42637b;margin-top:8px}
     .article-body figure.foro-image-right,.article-body figure.foro-image-left{position:relative}
     @media(max-width:700px){.v27-preview-shell{width:calc(100% - 30px)}.v27-preview-head h1{font-size:38px}.v27-preview-excerpt-wrap{flex-direction:column}.v27-preview-excerpt-wrap .v27-preview-excerpt-media{width:100%!important;order:2}.v27-preview-excerpt-wrap .v27-preview-excerpt-media:has([data-mobile-order="image-first"]){order:-1}}
-    </style></head><body><main class="v27-preview-shell"><header class="v27-preview-head"><small>PUBLICACIÓN · VISTA PREVIA</small><h1>${safe(p.title||'Título de la publicación')}</h1><p class="v27-preview-meta">Escrito por: ${safe(p.author_name||'Autor')}</p><div class="v27-preview-excerpt-wrap">${excerptMedia?`<div class="v27-preview-excerpt-media" style="--preview-excerpt-width:${$('#peExcerptWidth')?.value||35}%">${excerptMedia}</div>`:""}<div class="v27-preview-intro excerpt-paragraphs">${excerptParagraphsPreview(p.excerpt)}</div></div></header><div class="article-body">${articleBodyHtml}</div></main></body></html>`;
+    </style></head><body><main class="v27-preview-shell"><header class="v27-preview-head"><small>PUBLICACIÓN · VISTA PREVIA</small><h1>${safe(p.title||'Título de la publicación')}</h1><p class="v27-preview-meta">Escrito por: ${safe(p.author_name||'Autor').replaceAll(' · ', ', ')}</p><div class="v27-preview-excerpt-wrap">${excerptMedia?`<div class="v27-preview-excerpt-media" style="--preview-excerpt-width:${$('#peExcerptWidth')?.value||35}%">${excerptMedia}</div>`:""}<div class="v27-preview-intro excerpt-paragraphs">${excerptParagraphsPreview(p.excerpt)}</div></div></header><div class="article-body">${articleBodyHtml}</div></main></body></html>`;
     frame.srcdoc=doc;
   }
   function wirePostPreview(){const root=$('#postEditorBody');const panel=document.createElement('div');panel.className='editor-card post-preview-card';panel.innerHTML='<h3>Vista previa del artículo (sin publicar)</h3><p>Se actualiza mientras escribís. No guarda ni modifica el sitio público.</p><iframe id="postLivePreview" title="Previsualización de artículo" sandbox="allow-same-origin"></iframe>';$('.editor-main',root).appendChild(panel);root.addEventListener('input',renderLivePostPreview);root.addEventListener('change',renderLivePostPreview)}
@@ -629,7 +666,7 @@
     let iso=null;
     try{iso=value('peDate')?new Date(value('peDate')).toISOString():null}
     catch{if(errorNode){errorNode.textContent='La fecha de publicación no es válida.';errorNode.hidden=false;}return;}
-    Object.assign(p,{title:headline,slug,excerpt:value('peExcerpt').trim(),content_html:cleanEditorHtml(ed)+authorBioHtml()+(value('peExcerptImage').trim()?`<figure class="foro-image-excerpt-right" data-excerpt-width="${value('peExcerptWidth')}" data-mobile-order="${value('peExcerptMobile')}"><img src="${esc(value('peExcerptImage').trim())}" alt="Imagen del extracto"></figure>`:''),type:value('peType'),category:value('peCategory').trim(),tags:value('peTags').split(',').map(x=>x.trim()).filter(Boolean),author_name:value('peAuthor').trim(),author_role:value('peRole').trim(),status:myRole==='author'?'draft':value('peStatus'),published_at:iso,featured:document.getElementById('peFeatured')?.checked||false,featured_image:value('peImage').trim(),references:value('peReferences').split('\n').map(x=>x.trim()).filter(Boolean),seo_title:value('peSeoTitle').trim(),seo_description:value('peSeoDesc').trim()});
+    Object.assign(p,{title:headline,slug,excerpt:value('peExcerpt').trim(),content_html:cleanEditorHtml(ed)+authorBioHtml()+extraAuthorHtml()+(value('peExcerptImage').trim()?`<figure class="foro-image-excerpt-right" data-excerpt-width="${value('peExcerptWidth')}" data-mobile-order="${value('peExcerptMobile')}"><img src="${esc(value('peExcerptImage').trim())}" alt="Imagen del extracto"></figure>`:''),type:value('peType'),category:value('peCategory').trim(),tags:value('peTags').split(',').map(x=>x.trim()).filter(Boolean),author_name:publicationAuthorNames(),author_role:value('peRole').trim(),status:myRole==='author'?'draft':value('peStatus'),published_at:iso,featured:document.getElementById('peFeatured')?.checked||false,featured_image:value('peImage').trim(),references:value('peReferences').split('\n').map(x=>x.trim()).filter(Boolean),seo_title:value('peSeoTitle').trim(),seo_description:value('peSeoDesc').trim()});
     const btn=$('#savePost');savingPost=true;btn.disabled=true;btn.textContent='Guardando…';
     try{
       const saved=await db.savePost(p);
