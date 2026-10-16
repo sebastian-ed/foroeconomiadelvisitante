@@ -984,7 +984,19 @@
   function refreshPreview(){const f=$('#previewFrame');f.src=`../index.html?cms_live_preview=1&t=${Date.now()}`}
 
   async function loadInitial(){try{const remote=await db.loadSiteContent();state=remote?window.FORO_UPGRADE_CONTENT_V38(migrateLegacyPalette(mergeDeep(clone(defaults),remote))):clone(defaults);clearDirty();await Promise.all([loadPosts(),loadEvents(),loadMedia(),loadInquiries(),loadNewsletter(),loadHistory()]);renderAll();pushPreview()}catch(e){toast('Error cargando CMS: '+e.message)}}
-  async function applyRoleAccess(){try{const {data:{user}}=await db.client.auth.getUser();const {data}=await db.client.from('cms_profiles').select('role,enabled').eq('user_id',user.id).maybeSingle();if(!data?.role||data.enabled===false){toast('Este usuario no tiene acceso al CMS');await db.client.auth.signOut();return;}myRole=data.role;$$('[data-view="users"]').forEach(el=>el.style.display=myRole==='admin'?'':'none');const allowed=myRole==='admin'?null:myRole==='editor'?['dashboard','posts','events','media','visual','preview','pages','home','resources']:['dashboard','posts','media','preview'];$$('[data-view]',document).forEach(el=>{if(allowed&&!allowed.includes(el.dataset.view))el.style.display='none'});if(myRole!=='admin')$('#publishSite').style.display='none';$('#userRoleLabel').textContent='Rol: '+myRole}catch(e){console.warn('No fue posible determinar el rol',e)}}
+  async function applyRoleAccess(){try{
+    const {data:{user},error:authError}=await db.client.auth.getUser();
+    if(authError||!user){toast('No se pudo verificar la sesión. Volvé a iniciar sesión.');return;}
+    const {data,error:profileError}=await db.client.from('cms_profiles').select('role,enabled').eq('user_id',user.id).maybeSingle();
+    if(profileError){
+      console.error('Error leyendo cms_profiles:',profileError);
+      toast('No se pudo verificar el acceso CMS: '+(profileError.message||'Error de permisos o de red')+'. Revisá la migración V44 y las políticas RLS.');
+      return;
+    }
+    if(!data){toast('La cuenta está autenticada pero no tiene perfil CMS. Un administrador del proyecto debe revisar cms_profiles en Supabase.');return;}
+    if(data.enabled===false){toast('Esta cuenta está deshabilitada para ingresar al CMS.');return;}
+    if(!['admin','editor','author'].includes(data.role)){toast('El perfil CMS no tiene un rol válido.');return;}
+    myRole=data.role;$$('[data-view="users"]').forEach(el=>el.style.display=myRole==='admin'?'':'none');const allowed=myRole==='admin'?null:myRole==='editor'?['dashboard','posts','events','media','visual','preview','pages','home','resources']:['dashboard','posts','media','preview'];$$('[data-view]',document).forEach(el=>{if(allowed&&!allowed.includes(el.dataset.view))el.style.display='none'});if(myRole!=='admin')$('#publishSite').style.display='none';$('#userRoleLabel').textContent='Rol: '+myRole}catch(e){console.warn('No fue posible determinar el rol',e)}}
   async function setSession(session){const logged=Boolean(session?.user);$('#authScreen').classList.toggle('hidden',logged);if(logged){$('#userEmail').textContent=session.user.email||'Usuario';$('#accountButton').textContent=(session.user.email||'A')[0].toUpperCase();await loadInitial();await applyRoleAccess()}}
   async function boot(){
     $('#connectionDot').className=db.configured?'online':'offline';$('#connectionText').textContent=db.configured?'Supabase conectado':'Supabase sin configurar';
