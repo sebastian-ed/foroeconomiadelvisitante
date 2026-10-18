@@ -421,6 +421,9 @@ html body .article-body h2,html body .article-body h3,html body .article-body h4
  .article-page .article-body > figure.foro-image-below{order:2;float:none!important;clear:both;width:100%!important;max-width:100%!important;margin:1.5rem 0!important}
  .article-page .article-body > figure[data-mobile-order="image-first"]{order:-1}
  .article-page .article-body > .foro-document,.article-page .article-body > .references{order:3}
+ /* V46: todas las biografías quedan después de textos, imágenes, PDF y referencias. */
+ .article-page .article-body > .foro-author-bio,
+ .article-page .article-body > .foro-author-bio-extra{order:100!important}
  .article-page .article-header .foro-excerpt-row{display:flex!important;flex-direction:column!important}
  .article-page .article-header .foro-excerpt-row > .article-excerpt{order:0!important}
  .article-page .article-header .foro-excerpt-row > .foro-excerpt-row-image{order:2!important}
