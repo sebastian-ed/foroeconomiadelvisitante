@@ -37,8 +37,8 @@ Deno.serve(async(req)=>{
     if(action==='invite'){
       const email=clean(body.email,254).toLowerCase(),role=body.role,display_name=clean(body.display_name,120);
       if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||!validRole(role))return respond({error:'Correo o rol inválido'},400);
-      const redirect=Deno.env.get('FORO_INVITE_REDIRECT_URL')||undefined;
-      const {data,error}=await admin.auth.admin.inviteUserByEmail(email,{data:{full_name:display_name},...(redirect?{redirectTo:redirect}:{})});
+      const redirect='https://foroeconomiadelvisitante.com.ar/admin/acceso.html';
+      const {data,error}=await admin.auth.admin.inviteUserByEmail(email,{data:{full_name:display_name},{redirectTo:redirect}});
       if(error)throw error;
       if(!data.user?.id)throw Error('Supabase no devolvió el ID del usuario invitado');
       const {error:profileError}=await admin.from('cms_profiles').upsert({user_id:data.user.id,display_name,role,enabled:true},{onConflict:'user_id'});

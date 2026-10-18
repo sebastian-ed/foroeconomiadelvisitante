@@ -1009,6 +1009,17 @@
   $('#mobileMenu').onclick=()=>$('#sidebar').classList.toggle('open');$('#publishSite').onclick=publishSite;
   $('#accountButton').onclick=()=>$('#accountMenu').classList.toggle('hidden');$('#openMyProfile').onclick=()=>{$('#accountMenu').classList.add('hidden');openMyProfile()};$('#profileSave').onclick=saveMyProfile;$('#teamSave').onclick=saveTeamEditor;$('#logout').onclick=()=>db.client?.auth.signOut();
   $('#login').onclick=async()=>{try{$('#authStatus').textContent='Ingresando…';const {error}=await db.client.auth.signInWithPassword({email:$('#email').value.trim(),password:$('#password').value});if(error)throw error;$('#authStatus').textContent=''}catch(e){$('#authStatus').textContent=e.message}};
+  $('#forgotPassword').onclick=async()=>{
+    const email=$('#email').value.trim();
+    if(!email){$('#authStatus').textContent='Ingresá tu correo para recibir el enlace de recuperación.';return;}
+    const button=$('#forgotPassword');button.disabled=true;
+    try{
+      const {error}=await db.client.auth.resetPasswordForEmail(email,{redirectTo:'https://foroeconomiadelvisitante.com.ar/admin/acceso.html'});
+      if(error)throw error;
+      $('#authStatus').textContent='Si la cuenta existe, recibirás un enlace para definir una nueva contraseña. Revisá también Spam.';
+    }catch(error){$('#authStatus').textContent='No se pudo procesar la solicitud: '+error.message}
+    finally{button.disabled=false}
+  };
   $('#addSection').onclick=()=>{$('#blockTemplates').innerHTML=Object.entries(typeMeta).map(([type,m])=>`<button type="button" class="template-card" data-template="${type}"><strong>${m[0]} ${m[1]}</strong><small>${m[2]}</small></button>`).join('');$('#blockDialog').showModal();$$('[data-template]').forEach(b=>b.onclick=()=>{const base=defaults.sections.find(s=>s.type===b.dataset.template);if(!base)return;const c=clone(base);c.id=uid(c.type);c.label=`${typeMeta[c.type][1]} — nuevo`;c.settings={...(c.settings||{}),anchor:c.id};state.sections.push(c);$('#blockDialog').close();markDirty();renderSections();renderDashboard();openSectionEditor(state.sections.length-1)})};
   $('#applySection').onclick=()=>{const d=$('#sectionDialog')._draft;d.extraHtml=$('[data-rich-editor]',$('#sectionEditorBody'))?.innerHTML||'';state.sections[editingSection]=clone(d);$('#sectionDialog').close();editingSection=null;markDirty();renderSections();renderDashboard();toast('Bloque actualizado')};
   $('#resetTheme').onclick=()=>{if(confirm('¿Restaurar diseño por defecto?')){state.theme=clone(defaults.theme);markDirty();renderDesign()}};
