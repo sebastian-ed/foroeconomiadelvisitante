@@ -37,10 +37,12 @@
     async saveSiteContent(payload, note = 'Publicación desde CMS') {
       if (!client) throw new Error('Supabase no está configurado');
       const updated_by = await currentUserId();
-      const { error } = await client.from('site_content').upsert({ slug:'site', payload, updated_by }, { onConflict:'slug' });
+      const { data: saved, error } = await client.from('site_content').upsert({ slug:'site', payload, updated_by }, { onConflict:'slug' }).select('slug,payload,updated_at').single();
       if (error) throw error;
+      if (!saved || saved.slug !== 'site') throw new Error('No se confirmó la escritura en site_content. Revisá los permisos RLS del administrador.');
       const { error: revisionError } = await client.from('content_revisions').insert({ slug:'site', payload, note, created_by:updated_by });
       if (revisionError) console.warn(revisionError);
+      return saved;
     },
 
     async listRevisions(limit = 40) {

@@ -35,6 +35,13 @@
     }
     return data;
   }
+  // Comparación semántica: PostgreSQL jsonb puede cambiar el orden de las claves.
+  function stableContent(value){
+    if(Array.isArray(value))return value.map(stableContent);
+    if(value&&typeof value==='object')return Object.fromEntries(Object.keys(value).sort().filter(k=>value[k]!==undefined).map(k=>[k,stableContent(value[k])]));
+    return value;
+  }
+  const sameContent=(a,b)=>JSON.stringify(stableContent(a))===JSON.stringify(stableContent(b));
   function mergeDeep(target,source){if(!source||typeof source!=='object')return target;Object.entries(source).forEach(([k,v])=>{if(Array.isArray(v))target[k]=v;else if(v&&typeof v==='object')target[k]=mergeDeep(target[k]&&typeof target[k]==='object'?target[k]:{},v);else if(v!==undefined&&v!==null)target[k]=v});return target}
   const fmtDate=v=>v?new Intl.DateTimeFormat('es-AR',{dateStyle:'short',timeStyle:'short'}).format(new Date(v)):'';
   const typeMeta={
@@ -934,14 +941,29 @@
   async function saveMyProfile(){const b=$('#profileSave');b.disabled=true;try{await manageCollaborator({action:'update_me',display_name:$('#profileName').value.trim(),bio:$('#profileBio').value.trim(),organization:$('#profileOrganization').value.trim(),avatar_url:$('#profileAvatar').value.trim()});if($('#profilePassword').value){if($('#profilePassword').value.length<10)throw Error('La contraseña debe tener 10 caracteres o más');const {error}=await db.client.auth.updateUser({password:$('#profilePassword').value});if(error)throw error;}$('#profileDialog').close();toast('Perfil actualizado')}catch(e){$('#profileStatus').textContent=e.message;toast(e.message)}finally{b.disabled=false}}
   function renderAll(){renderDashboard();renderSections();renderPages();renderDesign();renderNavigation();renderSettings();renderPosts();renderEvents();renderMedia();renderInquiries();renderNewsletter();renderHistory();renderAdvanced()}
 
-  async function publishSite(){const bad=(state.navigation||[]).some(n=>!validNavHref(n.href)||(n.children||[]).some(c=>!validNavHref(c.href)));if(bad){switchView('navigation');toast('Revisá los destinos marcados antes de publicar el menú');return}if(!db.configured){toast('Supabase no está configurado');return}try{$('#publishSite').disabled=true;$('#saveState').textContent='Publicando…';await db.saveSiteContent(state,'Publicación desde CMS');
-      // Verificar que el contenido público almacenado coincide con los cambios enviados.
-      const remote=await db.loadSiteContent();
-      if(!remote || JSON.stringify(remote.pages)!==JSON.stringify(state.pages) || JSON.stringify(remote.navigation)!==JSON.stringify(state.navigation)) {
-        throw new Error('Supabase no devolvió el contenido actualizado. No se confirma la publicación.');
+  async function publishSite(){
+    const bad=(state.navigation||[]).some(n=>!validNavHref(n.href)||(n.children||[]).some(c=>!validNavHref(c.href)));
+    if(bad){switchView('navigation');toast('Revisá los destinos marcados antes de publicar el menú');return}
+    if(!db.configured){toast('Supabase no está configurado');return}
+    const btn=$('#publishSite');
+    try{
+      btn.disabled=true;$('#saveState').textContent='Publicando…';
+      // La respuesta de escritura comprueba que la actualización afectó una fila.
+      const written=await db.saveSiteContent(state,'Publicación desde CMS');
+      if(!written || !sameContent(written.pages||written.payload?.pages,state.pages)){
+        throw new Error('Supabase recibió la solicitud, pero la escritura no devolvió las páginas esperadas. Comprobá las políticas RLS.');
       }
-      clearDirty();const notice=$('#pagesPublishNotice');if(notice)notice.textContent='Cambios publicados y verificados en Supabase. Abrí el sitio público y actualizá la página para comprobarlos.';
-      toast('Cambios publicados y verificados');pushPreview();loadHistory()}catch(e){toast('Error: '+e.message);$('#saveState').textContent='Error'}finally{$('#publishSite').disabled=false}}
+      // Además, comprobar el dato que leerá la web pública; sin depender del orden de claves JSONB.
+      const remote=await db.loadSiteContent();
+      if(!remote || !sameContent(remote.pages,state.pages) || !sameContent(remote.navigation,state.navigation)){
+        throw new Error('La lectura posterior no coincide con las páginas o la navegación guardadas. Verificá el registro site_content y sus políticas de lectura.');
+      }
+      clearDirty();const notice=$('#pagesPublishNotice');
+      if(notice)notice.textContent='Cambios publicados y verificados en Supabase. Abrí el sitio público y actualizá para comprobarlos.';
+      toast('Cambios publicados y verificados');pushPreview();loadHistory();
+    }catch(e){toast('Error: '+e.message);$('#saveState').textContent='Error';const notice=$('#pagesPublishNotice');if(notice)notice.textContent='No se pudo confirmar la publicación: '+e.message}
+    finally{btn.disabled=false}
+  }
 
   // V12 structured page builder: every item is independent and editable.
   let activeBuilderSection=0;
