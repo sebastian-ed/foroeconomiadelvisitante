@@ -429,8 +429,13 @@
     applySeo({title:`Conocimiento — ${state.site.shortName}`,description:'Artículos, análisis, investigaciones, informes y recursos sobre economía del visitante.'});
     const type=qs.get('tipo')||'';
     const valid=knowledgeTypes;
-    const list=posts.filter(p=>!type||p.type===type).filter(p=>valid.has(p.type));
-    const tabs=[['','Todo'],['article','Artículos'],['analysis','Análisis'],['research','Investigaciones'],['report','Informes'],['resource','Biblioteca y recursos']];
+    const builtin=[['','Todo'],['article','Artículos'],['analysis','Análisis'],['research','Investigaciones'],['report','Informes'],['resource','Biblioteca y recursos']];
+    const custom=[],seen=new Set(builtin.map(([k])=>k));
+    const visit=n=>{if(!n)return;const m=String(n.href||'').match(/(?:^|\/)conocimiento\.html\?tipo=([^&#]+)/i);if(m){let key='';try{key=decodeURIComponent(m[1]).toLowerCase()}catch{}if(/^[a-z0-9_-]{2,64}$/.test(key)&&!seen.has(key)){custom.push([key,String(n.label||key)]);seen.add(key)}}(n.children||[]).forEach(visit)};
+    (state.navigation||[]).forEach(visit);
+    const tabs=[...builtin,...custom];
+    const isCustom=custom.some(([k])=>k===type);
+    const list=posts.filter(p=>!type||(isCustom?String(p.category||'').trim().toLowerCase()===type:p.type===type)).filter(p=>valid.has(p.type));
     $('#main').innerHTML = `${collectionHeader('CONOCIMIENTO','Ideas, datos y análisis para decidir mejor','Un espacio editorial para reunir investigaciones, perspectivas, informes y fuentes que ayuden a comprender la economía del visitante.')}
       <section class="section collection-section"><div class="shell"><div class="filter-tabs">${tabs.map(([k,l])=>`<a class="${type===k?'active':''}" href="conocimiento.html${k?`?tipo=${k}`:''}">${l}</a>`).join('')}</div><div class="post-grid collection-grid">${list.length?list.map(postCard).join(''):`<div class="empty-state"><span>EN PREPARACIÓN</span><h3>No hay publicaciones en esta categoría todavía</h3><p>El Foro prioriza publicar contenidos con autoría, fuentes y criterios editoriales definidos.</p></div>`}</div></div></section>`;
   }
