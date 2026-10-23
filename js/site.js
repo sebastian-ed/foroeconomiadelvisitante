@@ -198,6 +198,7 @@
     const slug = (isPost || isEvent) ? qs.get('slug') : null;
     const canonicalUrl = new URL(location.pathname, location.origin);
     if (slug && (isPost || isEvent)) canonicalUrl.searchParams.set('slug', slug);
+    if (page==='custom' && qs.get('slug')) canonicalUrl.searchParams.set('slug', qs.get('slug'));
     if (page === 'home') canonicalUrl.pathname = '/';
     $('#canonical')?.setAttribute('href', canonicalUrl.href);
     document.querySelector('meta[property="og:url"]')?.setAttribute('content', canonicalUrl.href);
@@ -216,7 +217,7 @@
   }
 
   function renderHeader() {
-    const configured = Array.isArray(state.navigation) ? state.navigation.filter(n=>n && n.href && n.label) : [];
+    const configured = Array.isArray(state.navigation) ? state.navigation.filter(n=>n && n.href && n.label && !n.hidden) : [];
     // Editable navigation is authoritative. Required destinations remain discoverable in the footer.
     const nav = configured.length ? configured : [
       {label:'Inicio',href:'index.html'}, {label:'El Foro',href:'el-foro.html'},
@@ -229,7 +230,7 @@
     const navHtml = nav.map(n => {
       const key = String(n.href).split('.')[0];
       const active = (current==='home' && key==='index') || current===key || (current==='post' && key==='conocimiento') || (current==='event' && key==='actividades');
-      const children = (n.children||[]).length ? `<div class="nav-dropdown" role="group" aria-label="Subsecciones de ${attr(n.label)}">${n.children.map(c=>`<a href="${attr(c.href)}">${esc(c.label)}</a>`).join('')}</div>` : '';
+      const children = (n.children||[]).filter(c=>!c.hidden).length ? `<div class="nav-dropdown" role="group" aria-label="Subsecciones de ${attr(n.label)}">${n.children.filter(c=>!c.hidden).map(c=>`<a href="${attr(c.href)}">${esc(c.label)}</a>`).join('')}</div>` : '';
       return `<div class="nav-item ${active?'is-active':''} ${n.featured?'is-featured':''}"><a href="${attr(n.href)}">${esc(n.label)}${children?' <span class="chev">⌄</span>':''}</a>${children}</div>`;
     }).join('');
     $('#siteHeader').innerHTML = `
@@ -242,7 +243,7 @@
     const mobile = document.createElement('nav'); mobile.id='mobileNav';mobile.className='mobile-nav';
     mobile.setAttribute('aria-label','Menú de navegación móvil');mobile.setAttribute('aria-hidden','true');
     mobile.innerHTML=`<div class="mobile-nav-inner"><div class="mobile-nav-top"><span>EXPLORAR EL FORO</span><button type="button" class="mobile-close" aria-label="Cerrar menú">✕</button></div>
-      ${nav.map(n => { const children=(n.children||[]).filter(c=>c.href&&c.label);
+      ${nav.map(n => { const children=(n.children||[]).filter(c=>c.href&&c.label&&!c.hidden);
         return `<div class="mobile-nav-group ${n.featured?'mobile-featured':''}"><div class="mobile-nav-row"><a href="${attr(n.href)}">${esc(n.label)}</a>${children.length?`<button type="button" class="mobile-sub-toggle" aria-expanded="false" aria-label="Ver subsecciones de ${attr(n.label)}">+</button>`:''}</div>${children.length?`<div class="mobile-submenu" hidden>${children.map(c=>`<a href="${attr(c.href)}">${esc(c.label)}</a>`).join('')}</div>`:''}</div>`;
       }).join('')}
       <div class="mobile-nav-bottom"><a href="buscar.html">Buscar contenidos ↗</a><a href="mailto:${attr(state.site?.contactEmail||'foroeconomiadelvisitante@gmail.com')}">Contacto ↗</a></div></div>`;
@@ -444,6 +445,7 @@
   // y se utiliza para publicaciones anteriores sin una sección explícita del menú.
   function editorialSection(post,group){
     const section=String(post.category||'').trim().toLowerCase();
+    if(section.startsWith('route:'))return '';
     const options=navigationFilters(group);
     if(options.some(([key])=>key===section))return section;
     const legacy={article:'article',analysis:'analysis',research:'research',report:'report',resource:'resource',interview:'interview',podcast:'podcast',experience:'experience',case:'case'};
@@ -457,19 +459,46 @@
     });
     return result;
   }
+  function currentRoute(){return (location.pathname.split('/').pop()||'index.html')+location.search}
+  function routeCategory(href){return 'route:'+encodeURIComponent(href)}
+  function belongsToRoute(p,href){
+    const category=String(p.category||'');
+    if(category.startsWith('route:'))return category===routeCategory(href);
+    // Compatibilidad exclusiva con publicaciones previas, que carecían de ruta.
+    if(href.startsWith('conocimiento.html?tipo='))return knowledgeTypes.has(p.type)&&editorialSection(p,'conocimiento')===new URLSearchParams(href.split('?')[1]).get('tipo');
+    if(href.startsWith('voces.html?tipo='))return voiceTypes.has(p.type)&&editorialSection(p,'voces')===new URLSearchParams(href.split('?')[1]).get('tipo');
+    return false;
+  }
+  function renderCustomPage(){
+    const slug=(qs.get('slug')||'').trim();const info=state.pages?.customPages?.[slug];
+    if(!info){$('#main').innerHTML=notFound();return}
+    applySeo({title:(info.title||slug)+' — '+state.site.shortName,description:info.description||''});
+    const href='pagina.html?slug='+encodeURIComponent(slug);
+    const list=posts.filter(p=>belongsToRoute(p,href));
+    $('#main').innerHTML=`${collectionHeader('FORO',info.title||slug,info.description||'')}<section class="section collection-section"><div class="shell">${info.body?`<div class="article-body">${sanitizeRichHtml(info.body)}</div>`:''}<div class="post-grid collection-grid">${list.map(postCard).join('')||'<div class="empty-state"><h3>Esta página todavía no tiene publicaciones.</h3></div>'}</div></div></section>`;
+  }
+  function addRoutePosts(){
+    if(['post','event','search','privacy','terms','custom'].includes(page))return;
+    const href=currentRoute();if((page==='conocimiento'||page==='voces')&&href.includes('?tipo='))return;
+    const list=posts.filter(p=>belongsToRoute(p,href));
+    if(!list.length)return;
+    const block=document.createElement('section');block.className='section collection-section';
+    block.innerHTML=`<div class="shell"><h2>Publicaciones de esta sección</h2><div class="post-grid collection-grid">${list.map(postCard).join('')}</div></div>`;
+    $('#main').append(block);
+  }
   function renderKnowledgePage() {
     applySeo({title:`Conocimiento — ${state.site.shortName}`,description:'Artículos, análisis, investigaciones, informes y recursos sobre economía del visitante.'});
     const type=(qs.get('tipo')||'').trim().toLowerCase();
     const builtin=[['article','Artículos'],['analysis','Análisis'],['research','Investigaciones'],['report','Informes'],['resource','Biblioteca y recursos']];
     const tabs=editorialTabs('conocimiento',builtin);
-    const list=posts.filter(p=>knowledgeTypes.has(p.type)&&(!type||editorialSection(p,'conocimiento')===type));
+    const list=posts.filter(p=>knowledgeTypes.has(p.type)&&(type?belongsToRoute(p,'conocimiento.html?tipo='+encodeURIComponent(type)):(!String(p.category||'').startsWith('route:')||String(p.category).startsWith('route:conocimiento.html%3Ftipo%3D'))));
     $('#main').innerHTML = `${collectionHeader('CONOCIMIENTO','Ideas, datos y análisis para decidir mejor','Un espacio editorial para reunir investigaciones, perspectivas, informes y fuentes que ayuden a comprender la economía del visitante.')}
       <section class="section collection-section"><div class="shell"><div class="filter-tabs">${tabs.map(([k,l])=>`<a class="${type===k?'active':''}" href="conocimiento.html${k?`?tipo=${encodeURIComponent(k)}`:''}">${esc(l)}</a>`).join('')}</div><div class="post-grid collection-grid">${list.length?list.map(postCard).join(''):`<div class="empty-state"><span>EN PREPARACIÓN</span><h3>No hay publicaciones en esta categoría todavía</h3><p>El Foro prioriza publicar contenidos con autoría, fuentes y criterios editoriales definidos.</p></div>`}</div></div></section>`;
   }
 
   function renderResourcesPage() {
     applySeo({title:`Biblioteca y recursos — ${state.site.shortName}`,description:'Documentos, publicaciones, videos y enlaces seleccionados sobre la economía del visitante.'});
-    const resources=posts.filter(p=>p.type==='resource');
+    const resources=posts.filter(p=>p.type==='resource' && (!String(p.category||'').startsWith('route:') || belongsToRoute(p,'biblioteca-recursos.html')));
     const url=new URLSearchParams(location.search);
     const kind=url.get('formato')||'';
     const formats=[['','Todos'],['documento','Documentos'],['video','Videos'],['enlace','Enlaces']];
@@ -487,7 +516,7 @@
     const type=(qs.get('tipo')||'').trim().toLowerCase();
     const builtin=[['interview','Entrevistas'],['podcast','Podcast'],['experience','Experiencias'],['case','Casos territoriales']];
     const tabs=editorialTabs('voces',builtin);
-    const list=posts.filter(p=>voiceTypes.has(p.type)&&(!type||editorialSection(p,'voces')===type));
+    const list=posts.filter(p=>voiceTypes.has(p.type)&&(type?belongsToRoute(p,'voces.html?tipo='+encodeURIComponent(type)):(!String(p.category||'').startsWith('route:')||String(p.category).startsWith('route:voces.html%3Ftipo%3D'))));
     $('#main').innerHTML = `${collectionHeader('VOCES','Personas, experiencias y territorios','Perspectivas diversas para entender cómo se construye valor alrededor de quienes visitan y se desplazan entre territorios.')}
       <section class="section collection-section"><div class="shell"><div class="filter-tabs">${tabs.map(([k,l])=>`<a class="${type===k?'active':''}" href="voces.html${k?`?tipo=${encodeURIComponent(k)}`:''}">${esc(l)}</a>`).join('')}</div>${list.length?`<div class="post-grid collection-grid">${list.map(postCard).join('')}</div>`:`<div class="empty-state"><span>SECCIÓN ABIERTA</span><h3>Voces se construye con aportes reales</h3><p>No se publicarán entrevistas o casos ficticios para completar la portada. La sección crecerá con contenidos producidos y confirmados.</p><a class="btn primary" href="participa.html">Proponer una voz o experiencia</a></div>`}</div></section>`;
   }
@@ -693,6 +722,7 @@
     if (page==='home') renderHome();
     else if (page==='el-foro') renderForoPage();
     else if (page==='conocimiento') renderKnowledgePage();
+    else if (page==='custom') renderCustomPage();
     else if (page==='resources') renderResourcesPage();
     else if (page==='voces') renderVoicesPage();
     else if (page==='actividades') renderActivitiesPage();
@@ -709,6 +739,7 @@
     }
     Object.entries(state.site?.inlineStyles||{}).forEach(([path,styles])=>{document.querySelectorAll('[data-cms-path]').forEach(el=>{if(el.dataset.cmsPath!==path)return;['fontFamily','fontSize','lineHeight','textAlign','fontWeight','fontStyle'].forEach(k=>{if(styles[k])el.style[k]=styles[k]})})});
     appendVisualBlocks();
+    addRoutePosts();
     setupInlineEditing();
     configureArticleGalleries();
     enhanceMediaPlayback();
