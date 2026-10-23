@@ -425,17 +425,31 @@
     return `<section class="collection-hero" id="cabecera-${attr(page)}"><div class="shell"><span class="eyebrow">${esc(eyebrow)}</span>${editable('h1',custom.collectionTitle||title,base+'.collectionTitle')}${editable('p',custom.collectionDescription||body,base+'.collectionDescription')}</div></section>`;
   }
 
+  function navigationFilters(page){
+    const found=[],seen=new Set();
+    const visit=n=>{if(!n)return;
+      try{const url=new URL(String(n.href||''),location.href);
+        if(url.origin===location.origin&&url.pathname.split('/').pop()===page+'.html'){
+          const key=(url.searchParams.get('tipo')||'').trim().toLowerCase();
+          if(/^[a-z0-9_-]{2,64}$/.test(key)&&!seen.has(key)){
+            found.push([key,String(n.label||key)]);seen.add(key)
+          }
+        }
+      }catch{}
+      (n.children||[]).forEach(visit)
+    };
+    (state.navigation||[]).forEach(visit);return found
+  }
+  function categoryIs(post,key){return String(post.category||'').trim().toLowerCase()===key}
   function renderKnowledgePage() {
     applySeo({title:`Conocimiento — ${state.site.shortName}`,description:'Artículos, análisis, investigaciones, informes y recursos sobre economía del visitante.'});
     const type=qs.get('tipo')||'';
     const valid=knowledgeTypes;
     const builtin=[['','Todo'],['article','Artículos'],['analysis','Análisis'],['research','Investigaciones'],['report','Informes'],['resource','Biblioteca y recursos']];
-    const custom=[],seen=new Set(builtin.map(([k])=>k));
-    const visit=n=>{if(!n)return;const m=String(n.href||'').match(/(?:^|\/)conocimiento\.html\?tipo=([^&#]+)/i);if(m){let key='';try{key=decodeURIComponent(m[1]).toLowerCase()}catch{}if(/^[a-z0-9_-]{2,64}$/.test(key)&&!seen.has(key)){custom.push([key,String(n.label||key)]);seen.add(key)}}(n.children||[]).forEach(visit)};
-    (state.navigation||[]).forEach(visit);
+    const custom=navigationFilters('conocimiento').filter(([key])=>!builtin.some(([k])=>k===key));
     const tabs=[...builtin,...custom];
     const isCustom=custom.some(([k])=>k===type);
-    const list=posts.filter(p=>!type||(isCustom?String(p.category||'').trim().toLowerCase()===type:p.type===type)).filter(p=>valid.has(p.type));
+    const list=posts.filter(p=>!type||(isCustom?categoryIs(p,type):p.type===type)).filter(p=>valid.has(p.type));
     $('#main').innerHTML = `${collectionHeader('CONOCIMIENTO','Ideas, datos y análisis para decidir mejor','Un espacio editorial para reunir investigaciones, perspectivas, informes y fuentes que ayuden a comprender la economía del visitante.')}
       <section class="section collection-section"><div class="shell"><div class="filter-tabs">${tabs.map(([k,l])=>`<a class="${type===k?'active':''}" href="conocimiento.html${k?`?tipo=${k}`:''}">${l}</a>`).join('')}</div><div class="post-grid collection-grid">${list.length?list.map(postCard).join(''):`<div class="empty-state"><span>EN PREPARACIÓN</span><h3>No hay publicaciones en esta categoría todavía</h3><p>El Foro prioriza publicar contenidos con autoría, fuentes y criterios editoriales definidos.</p></div>`}</div></div></section>`;
   }
@@ -458,8 +472,11 @@
   function renderVoicesPage() {
     applySeo({title:`Voces — ${state.site.shortName}`,description:'Entrevistas, podcast, experiencias y casos territoriales vinculados con la economía del visitante.'});
     const type=qs.get('tipo')||'';
-    const list=posts.filter(p=>voiceTypes.has(p.type)&&(!type||p.type===type));
-    const tabs=[['','Todo'],['interview','Entrevistas'],['podcast','Podcast'],['experience','Experiencias'],['case','Casos territoriales']];
+    const builtin=[['','Todo'],['interview','Entrevistas'],['podcast','Podcast'],['experience','Experiencias'],['case','Casos territoriales']];
+    const custom=navigationFilters('voces').filter(([key])=>!builtin.some(([k])=>k===key));
+    const tabs=[...builtin,...custom];
+    const isCustom=custom.some(([k])=>k===type);
+    const list=posts.filter(p=>voiceTypes.has(p.type)&&(!type||(isCustom?categoryIs(p,type):p.type===type)));
     $('#main').innerHTML = `${collectionHeader('VOCES','Personas, experiencias y territorios','Perspectivas diversas para entender cómo se construye valor alrededor de quienes visitan y se desplazan entre territorios.')}
       <section class="section collection-section"><div class="shell"><div class="filter-tabs">${tabs.map(([k,l])=>`<a class="${type===k?'active':''}" href="voces.html${k?`?tipo=${k}`:''}">${l}</a>`).join('')}</div>${list.length?`<div class="post-grid collection-grid">${list.map(postCard).join('')}</div>`:`<div class="empty-state"><span>SECCIÓN ABIERTA</span><h3>Voces se construye con aportes reales</h3><p>No se publicarán entrevistas o casos ficticios para completar la portada. La sección crecerá con contenidos producidos y confirmados.</p><a class="btn primary" href="participa.html">Proponer una voz o experiencia</a></div>`}</div></section>`;
   }
@@ -467,8 +484,9 @@
   function renderActivitiesPage() {
     applySeo({title:`Actividades — ${state.site.shortName}`,description:'Agenda de encuentros, conversatorios, talleres, hackatones y proyectos del Foro.'});
     const type=qs.get('tipo')||'';
+    const builtin=[['','Agenda'],['conversation','Conversatorios'],['workshop','Talleres'],['hackathon','Hackatones'],['project','Proyectos']];
+    const tabs=[...builtin,...navigationFilters('actividades').filter(([key])=>!builtin.some(([k])=>k===key))];
     const list=events.filter(e=>!type||e.event_type===type);
-    const tabs=[['','Agenda'],['conversation','Conversatorios'],['workshop','Talleres'],['hackathon','Hackatones'],['project','Proyectos']];
     $('#main').innerHTML = `${collectionHeader('ACTIVIDADES','Encuentros para conectar conocimiento y acción','La agenda publica únicamente actividades confirmadas, con información clara de fecha, modalidad, responsables y forma de participación.')}
       <section class="section agenda-page"><div class="shell"><div class="filter-tabs light-tabs">${tabs.map(([k,l])=>`<a class="${type===k?'active':''}" href="actividades.html${k?`?tipo=${k}`:''}">${l}</a>`).join('')}</div>${list.length?`<div class="events-list page-list">${list.map(eventCard).join('')}</div>`:`<div class="empty-state dark"><span>AGENDA EN PREPARACIÓN</span><h3>No hay actividades públicas confirmadas todavía</h3><p>La web evita publicar fechas o encuentros sin confirmación. Podés proponer un tema o una actividad desde Participá.</p><a class="btn white" href="participa.html">Proponer una actividad</a></div>`}</div></section>`;
   }
