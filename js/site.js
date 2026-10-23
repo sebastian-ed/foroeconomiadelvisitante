@@ -440,18 +440,31 @@
     };
     (state.navigation||[]).forEach(visit);return found
   }
-  function categoryIs(post,key){return String(post.category||'').trim().toLowerCase()===key}
+  // La sección es el destino editorial exclusivo. El tipo solo define el formato
+  // y se utiliza para publicaciones anteriores sin una sección explícita del menú.
+  function editorialSection(post,group){
+    const section=String(post.category||'').trim().toLowerCase();
+    const options=navigationFilters(group);
+    if(options.some(([key])=>key===section))return section;
+    const legacy={article:'article',analysis:'analysis',research:'research',report:'report',resource:'resource',interview:'interview',podcast:'podcast',experience:'experience',case:'case'};
+    return legacy[post.type]||'';
+  }
+  function editorialTabs(group,builtin){
+    const actual=navigationFilters(group);
+    const result=[['','Todo']];const seen=new Set(['']);
+    [...actual,...builtin.filter(([key])=>!actual.some(([k])=>k===key))].forEach(([key,label])=>{
+      if(!seen.has(key)){result.push([key,label]);seen.add(key)}
+    });
+    return result;
+  }
   function renderKnowledgePage() {
     applySeo({title:`Conocimiento — ${state.site.shortName}`,description:'Artículos, análisis, investigaciones, informes y recursos sobre economía del visitante.'});
-    const type=qs.get('tipo')||'';
-    const valid=knowledgeTypes;
-    const builtin=[['','Todo'],['article','Artículos'],['analysis','Análisis'],['research','Investigaciones'],['report','Informes'],['resource','Biblioteca y recursos']];
-    const custom=navigationFilters('conocimiento').filter(([key])=>!builtin.some(([k])=>k===key));
-    const tabs=[...builtin,...custom];
-    const isCustom=custom.some(([k])=>k===type);
-    const list=posts.filter(p=>!type||(isCustom?categoryIs(p,type):p.type===type)).filter(p=>valid.has(p.type));
+    const type=(qs.get('tipo')||'').trim().toLowerCase();
+    const builtin=[['article','Artículos'],['analysis','Análisis'],['research','Investigaciones'],['report','Informes'],['resource','Biblioteca y recursos']];
+    const tabs=editorialTabs('conocimiento',builtin);
+    const list=posts.filter(p=>knowledgeTypes.has(p.type)&&(!type||editorialSection(p,'conocimiento')===type));
     $('#main').innerHTML = `${collectionHeader('CONOCIMIENTO','Ideas, datos y análisis para decidir mejor','Un espacio editorial para reunir investigaciones, perspectivas, informes y fuentes que ayuden a comprender la economía del visitante.')}
-      <section class="section collection-section"><div class="shell"><div class="filter-tabs">${tabs.map(([k,l])=>`<a class="${type===k?'active':''}" href="conocimiento.html${k?`?tipo=${k}`:''}">${l}</a>`).join('')}</div><div class="post-grid collection-grid">${list.length?list.map(postCard).join(''):`<div class="empty-state"><span>EN PREPARACIÓN</span><h3>No hay publicaciones en esta categoría todavía</h3><p>El Foro prioriza publicar contenidos con autoría, fuentes y criterios editoriales definidos.</p></div>`}</div></div></section>`;
+      <section class="section collection-section"><div class="shell"><div class="filter-tabs">${tabs.map(([k,l])=>`<a class="${type===k?'active':''}" href="conocimiento.html${k?`?tipo=${encodeURIComponent(k)}`:''}">${esc(l)}</a>`).join('')}</div><div class="post-grid collection-grid">${list.length?list.map(postCard).join(''):`<div class="empty-state"><span>EN PREPARACIÓN</span><h3>No hay publicaciones en esta categoría todavía</h3><p>El Foro prioriza publicar contenidos con autoría, fuentes y criterios editoriales definidos.</p></div>`}</div></div></section>`;
   }
 
   function renderResourcesPage() {
@@ -471,14 +484,12 @@
 
   function renderVoicesPage() {
     applySeo({title:`Voces — ${state.site.shortName}`,description:'Entrevistas, podcast, experiencias y casos territoriales vinculados con la economía del visitante.'});
-    const type=qs.get('tipo')||'';
-    const builtin=[['','Todo'],['interview','Entrevistas'],['podcast','Podcast'],['experience','Experiencias'],['case','Casos territoriales']];
-    const custom=navigationFilters('voces').filter(([key])=>!builtin.some(([k])=>k===key));
-    const tabs=[...builtin,...custom];
-    const isCustom=custom.some(([k])=>k===type);
-    const list=posts.filter(p=>voiceTypes.has(p.type)&&(!type||(isCustom?categoryIs(p,type):p.type===type)));
+    const type=(qs.get('tipo')||'').trim().toLowerCase();
+    const builtin=[['interview','Entrevistas'],['podcast','Podcast'],['experience','Experiencias'],['case','Casos territoriales']];
+    const tabs=editorialTabs('voces',builtin);
+    const list=posts.filter(p=>voiceTypes.has(p.type)&&(!type||editorialSection(p,'voces')===type));
     $('#main').innerHTML = `${collectionHeader('VOCES','Personas, experiencias y territorios','Perspectivas diversas para entender cómo se construye valor alrededor de quienes visitan y se desplazan entre territorios.')}
-      <section class="section collection-section"><div class="shell"><div class="filter-tabs">${tabs.map(([k,l])=>`<a class="${type===k?'active':''}" href="voces.html${k?`?tipo=${k}`:''}">${l}</a>`).join('')}</div>${list.length?`<div class="post-grid collection-grid">${list.map(postCard).join('')}</div>`:`<div class="empty-state"><span>SECCIÓN ABIERTA</span><h3>Voces se construye con aportes reales</h3><p>No se publicarán entrevistas o casos ficticios para completar la portada. La sección crecerá con contenidos producidos y confirmados.</p><a class="btn primary" href="participa.html">Proponer una voz o experiencia</a></div>`}</div></section>`;
+      <section class="section collection-section"><div class="shell"><div class="filter-tabs">${tabs.map(([k,l])=>`<a class="${type===k?'active':''}" href="voces.html${k?`?tipo=${encodeURIComponent(k)}`:''}">${esc(l)}</a>`).join('')}</div>${list.length?`<div class="post-grid collection-grid">${list.map(postCard).join('')}</div>`:`<div class="empty-state"><span>SECCIÓN ABIERTA</span><h3>Voces se construye con aportes reales</h3><p>No se publicarán entrevistas o casos ficticios para completar la portada. La sección crecerá con contenidos producidos y confirmados.</p><a class="btn primary" href="participa.html">Proponer una voz o experiencia</a></div>`}</div></section>`;
   }
 
   function renderActivitiesPage() {
