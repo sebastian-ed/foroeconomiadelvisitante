@@ -362,9 +362,18 @@
     let cut=text.slice(0,max);const space=cut.lastIndexOf(' ');if(space>max*.6)cut=cut.slice(0,space);
     return esc(cut)+'…';
   }
+  // La categoría puede contener una ruta técnica del CMS (route:...). Esa ruta
+  // sirve para ubicar la publicación, pero nunca debe mostrarse al visitante.
+  function publicPostLabel(p, fallback='Conocimiento') {
+    const category=String(p.category||'').trim();
+    if(category && !category.startsWith('route:'))return category;
+    return typeNames[p.type]||fallback;
+  }
   function postCard(p, large=false) {
     const href=`articulo.html?slug=${encodeURIComponent(p.slug)}`;
-    return `<article class="post-card ${large?'large':''}"><a class="post-visual ${p.featured_image?'has-image':''}" href="${href}" ${p.featured_image?`style="--foro-featured-image:url('${attr(p.featured_image)}')"`:''}><span>${esc(typeNames[p.type]||p.category||'Publicación')}</span>${!p.featured_image?`<div class="visual-mark">${esc((p.category||typeNames[p.type]||'FORO').slice(0,2).toUpperCase())}</div>`:''}</a><div class="post-copy"><div class="post-meta"><span>${esc(p.category||typeNames[p.type]||'Conocimiento')}</span><time>${esc(fmtDate(p.published_at))}</time></div><h3><a href="${href}">${esc(p.title)}</a></h3><p class="post-intro">${cardIntro(p.excerpt)}</p>${(p.content_html||'').includes('foro-byline-hidden')?'':`<div class="post-byline">Por ${esc(p.author_name||state.site.shortName)}</div>`}<a class="read-link" href="${href}">Leer publicación <span>↗</span></a></div></article>`;
+    const label=publicPostLabel(p);
+    const typeLabel=typeNames[p.type]||label||'Publicación';
+    return `<article class="post-card ${large?'large':''}"><a class="post-visual ${p.featured_image?'has-image':''}" href="${href}" ${p.featured_image?`style="--foro-featured-image:url('${attr(p.featured_image)}')"`:''}><span>${esc(typeLabel)}</span>${!p.featured_image?`<div class="visual-mark">${esc((label||'FORO').slice(0,2).toUpperCase())}</div>`:''}</a><div class="post-copy"><div class="post-meta"><span>${esc(label)}</span><time>${esc(fmtDate(p.published_at))}</time></div><h3><a href="${href}">${esc(p.title)}</a></h3><p class="post-intro">${cardIntro(p.excerpt)}</p>${(p.content_html||'').includes('foro-byline-hidden')?'':`<div class="post-byline">Por ${esc(p.author_name||state.site.shortName)}</div>`}<a class="read-link" href="${href}">Leer publicación <span>↗</span></a></div></article>`;
   }
 
   function renderCollection(s,i,kind='knowledge') {
